@@ -28,8 +28,9 @@ dist/bar/  ->  https://abernier.github.io/examples/bar/
 
 - No Jekyll here (that only happens with the legacy "deploy from a branch"
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
-- No `dist/index.html`, so https://abernier.github.io/examples/ itself 404s
-  (Pages doesn't do directory listings). Drop one in if you want a landing page.
+- The landing page at https://abernier.github.io/examples/ is generated at deploy
+  time from the `dist/*` folders, so it never goes stale. Commit your own
+  `dist/index.html` to override it.
 - Client-side routed SPAs need a `404.html` copy of their `index.html` inside
   their own folder to survive deep links.
 - One-time setup: repo settings → Pages → **Source: GitHub Actions**.
