@@ -6,6 +6,7 @@
     "dev": "npm --prefix src/home run dev",
     "build": "./build-home.sh",
     "preview": "npm --prefix src/home run preview",
-    "shots": "./preview.sh"
+    "shots": "./preview.sh",
+    "og": "node .github/og.mjs"
   }
 }

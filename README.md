@@ -51,7 +51,7 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
 - No Jekyll here (that only happens with the legacy "deploy from a branch"
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
 - The landing page at https://abernier.github.io/examples/ is generated at deploy
-  time, in two steps:
+  time, in three steps:
   1. `.github/preview.mjs` screenshots every `dist/<name>/` (Playwright, in the
      `mcr.microsoft.com/playwright` container — browsers already baked in) into
      `dist/_previews/`.
@@ -60,6 +60,13 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
      (the list is read from disk at build time) and a full-viewport iframe of the
      selected one. The selection lives in the hash, so
      https://abernier.github.io/examples/#lp-surf is a link.
+  3. `.github/og.mjs` writes the social card tags into every `index.html` in
+     `dist/` — `og:image` is that project's thumbnail, `og:title`/`og:description`
+     are read from the page's own `<title>`/`<meta name=description>`. The gallery
+     itself gets `dist/_previews/_home.jpg`, a contact sheet of the thumbs that
+     `preview.mjs` composes. Tags go in a `<!-- og:start -->…<!-- og:end -->`
+     block a rerun replaces, and a page that already carries its own `og:image`
+     is left alone.
 
   `dist/index.html`, `dist/_home/` and `dist/_previews/` are gitignored: they're
   rebuilt on every deploy. `git add -f dist/index.html` to hand-write the page
@@ -71,6 +78,9 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
   npm run build     # ./build-home.sh — build + copy into dist/
   npm run preview   # serve dist/ as deployed
   npm run shots     # ./preview.sh — re-screenshot, then build (needs Docker)
+  npm run og        # inject the social cards — CI does this on every deploy,
+                    # so locally it only dirties the committed dist/*/index.html
+                    # (`git checkout dist` to undo)
   ```
 - To regenerate everything locally: `./preview.sh` (screenshots in the same
   container image as CI — needs Docker — then the Vite build).

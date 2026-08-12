@@ -51,6 +51,10 @@ jobs:
       # dist/index.html + dist/_home/. After the screenshots, on purpose.
       - run: ./build-home.sh
 
+      # Social cards: og:image per page, pointing at the thumbs above. Last,
+      # because it rewrites every index.html in dist/ — the gallery's included.
+      - run: node .github/og.mjs
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
