@@ -1,0 +1,4 @@
+# Sources stay local — only the assembled dist/ is versioned and deployed
+/src/
+
+.DS_Store
