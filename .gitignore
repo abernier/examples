@@ -11,5 +11,4 @@ package-lock.json
 dist/_previews/
 dist/index.html
 dist/_home/
-.vercel
 .env*

@@ -29,6 +29,11 @@ const MOUNT = "/examples"; // must match the GitHub Pages base path
 // Keep in sync with the card aspect-ratio in src/home/style.css.
 const VIEWPORT = { width: 1280, height: 800 };
 const SETTLE_MS = 2500; // let fonts, hero animations and 3D scenes land
+// The gallery's own social image: a contact sheet of the thumbs, at the ratio
+// social cards crop to. Wired in by .github/og.mjs.
+const MOSAIC = `${SHOT_DIR}/_home.jpg`;
+const OG_VIEWPORT = { width: 1200, height: 630 };
+const MOSAIC_TILES = 12;
 
 const exists = (p) => access(p).then(() => true, () => false);
 
@@ -98,6 +103,44 @@ const MIME = {
   ".exr": "image/x-exr",
 };
 
+// Evenly spread picks across the list — first and last included — so the sheet
+// keeps sampling the whole gallery as it grows.
+function spread(list, count) {
+  if (list.length <= count) return list;
+  return Array.from({ length: count }, (_, i) =>
+    list[Math.round((i * (list.length - 1)) / (count - 1))]
+  );
+}
+
+function mosaicHtml(tiles, origin) {
+  const columns = tiles.length <= 2 ? tiles.length : tiles.length <= 6 ? 3 : 4;
+  const cells = tiles
+    .map((name) => `<img src="${origin}/_previews/${name}.jpg" alt="" />`)
+    .join("");
+  return `<!doctype html><meta charset="utf-8" /><style>
+    * { margin: 0; box-sizing: border-box }
+    html, body { width: 100%; height: 100%; background: #0a0a0b }
+    .grid {
+      width: 100%; height: 100%; display: grid; gap: 6px; padding: 6px;
+      grid-template-columns: repeat(${columns}, 1fr);
+      grid-auto-rows: 1fr;
+    }
+    img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; display: block }
+    .scrim {
+      position: fixed; inset: auto 0 0 0; height: 45%;
+      background: linear-gradient(to top, #0a0a0bef 18%, #0a0a0b00);
+    }
+    .word {
+      position: fixed; left: 44px; bottom: 38px; color: #fafafa;
+      font: 600 54px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      letter-spacing: -0.03em;
+    }
+    .word span { color: #a1a1aa; font-weight: 400 }
+  </style>
+  <div class="grid">${cells}</div><div class="scrim"></div>
+  <div class="word"><span>abernier/</span>examples</div>`;
+}
+
 // Minimal static server for dist/, mounted at /examples/ like on Pages.
 function serve() {
   const root = path.resolve("dist");
@@ -149,7 +192,13 @@ if (process.env.SKIP_SHOTS !== "1" && names.length) {
     else todo.push(name);
   }
 
-  if (todo.length) {
+  // The contact sheet needs a browser too, so only redo it when the gallery
+  // changed — a new project, or any thumb retaken.
+  const mosaicKey = createHash("sha1").update(names.join("\n")).digest("hex");
+  const needMosaic =
+    force || todo.length > 0 || previous.__mosaic !== mosaicKey || !(await exists(MOSAIC));
+
+  if (todo.length || needMosaic) {
     const { chromium } = loadPlaywright();
     const { server, port } = await serve();
     const origin = `http://127.0.0.1:${port}${MOUNT}`;
@@ -180,8 +229,32 @@ if (process.env.SKIP_SHOTS !== "1" && names.length) {
       await page.close();
     }
 
+    if (needMosaic) {
+      const shots = [];
+      for (const name of names) if (await exists(`${SHOT_DIR}/${name}.jpg`)) shots.push(name);
+
+      if (!shots.length) console.log("· _home.jpg (no thumbs yet)");
+      else {
+        const page = await context.newPage();
+        await page.setViewportSize(OG_VIEWPORT);
+        try {
+          await page.setContent(mosaicHtml(spread(shots, MOSAIC_TILES), origin), {
+            waitUntil: "networkidle",
+          });
+          await page.screenshot({ path: MOSAIC, type: "jpeg", quality: 80 });
+          current.__mosaic = mosaicKey;
+          console.log("✓ _home.jpg");
+        } catch (error) {
+          console.log(`✗ _home.jpg — ${error.message.split("\n")[0]}`);
+        }
+        await page.close();
+      }
+    }
+
     await browser.close();
     server.close();
+  } else if (previous.__mosaic) {
+    current.__mosaic = previous.__mosaic;
   }
 
   // Drop entries for projects that no longer exist, then record what we have.

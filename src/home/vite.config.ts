@@ -57,7 +57,7 @@ function gallery(): Plugin {
 }
 
 export default defineConfig({
-  // Relative: the page is served from /examples/ on Pages and from / on Vercel.
+  // Relative: the page is served from /examples/ on Pages, from / in dev.
   base: './',
   // dist/ is the destination, not an input — the dev server serves it through
   // the middleware in `gallery` instead.
