@@ -39,9 +39,13 @@ skill is not listed, install it:
 cd src
 npm create vite@latest <slug> -- --template react-ts
 cd <slug>
-npm i three @react-three/fiber @react-three/drei @react-three/postprocessing maath
+npm i three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing maath
 npm i -D @types/three
 ```
+
+`postprocessing` is a peer of `@react-three/postprocessing`, not a dependency —
+leave it out and the build dies on `Rolldown failed to resolve import
+"postprocessing"`, with nothing wrong in your own code.
 
 Then, in `vite.config.ts`, set a relative base so the build works both under
 `/examples/<slug>/` and from `file://`:
@@ -94,6 +98,17 @@ It is called *impress-me* for a reason. A page ships when:
 - **Small.** Keep `dist/` around 1–2 MB; anything over ~4 MB needs a reason
   (compress textures, `.glb` over `.gltf`, draco).
 
+Two things that reliably cost more than they look:
+
+- `MeshTransmissionMaterial` renders the whole scene into its own buffer on every
+  frame it is drawn — including cells scrolled far off screen. Six of them is
+  nine scene renders per frame. Set `visible = false` on the sections that are
+  not in view, and give the small ones lower `samples`/`resolution` and no
+  `backside`.
+- A transmissive object over a dark background has no silhouette: all you see is
+  its rim. Give it something bright to refract — a lit plate behind it, or a lit
+  wall — or it reads as a smudge.
+
 ## 5. Build and look at it
 
 ```sh
@@ -103,6 +118,25 @@ npm run preview        # then open the printed URL in a browser tab
 
 Actually look at the page before calling it done: first paint, scroll to the
 bottom, resize narrow, check the console is quiet.
+
+**Judge it the way the gallery will.** Drive a real browser at 1280×800 and wait
+2.5s, exactly like `.github/preview.mjs`, and screenshot each section. Do not
+judge from a Chrome tab you are driving in the background: a hidden tab throttles
+`requestAnimationFrame` to nothing, so the scene renders two frames in ten
+seconds and every screenshot comes back black. That looks precisely like a
+performance bug and is not one. Playwright pages are always visible:
+
+```js
+const page = await chromium.launch({ channel: 'chrome' }).then((b) => b.newPage({
+  viewport: { width: 1280, height: 800 },
+}))
+await page.goto(url, { waitUntil: 'networkidle' })
+await page.waitForTimeout(2500)
+await page.screenshot({ path: 'hero.jpg' })
+```
+
+Measure fps in that page too (count `requestAnimationFrame` calls over 2s)
+rather than trusting how it feels.
 
 ## 6. Publish
 

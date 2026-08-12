@@ -1,0 +1,349 @@
+:root {
+  --ink: #f6e9d5;
+  --ink-dim: #c8b295;
+  --honey: #ffb01f;
+  --bg: #0c0703;
+
+  --display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* The canvas fills #root and stays put; the DOM scrolls above it. */
+#root {
+  position: fixed;
+  inset: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------------- topbar */
+
+.topbar {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.6rem clamp(1.2rem, 4vw, 3.2rem);
+  pointer-events: none;
+}
+
+.topbar > * {
+  pointer-events: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.brand-mark {
+  width: 15px;
+  height: 17px;
+  background: var(--honey);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.2vw, 2rem);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.topbar nav a:hover {
+  color: var(--ink);
+}
+
+.pill {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid rgb(255 176 31 / 0.5);
+  border-radius: 999px;
+  color: var(--honey);
+  transition: background 0.25s, color 0.25s;
+}
+
+.pill:hover {
+  background: var(--honey);
+  color: #1a0f03;
+}
+
+.pill.solid {
+  background: var(--honey);
+  border-color: var(--honey);
+  color: #1a0f03;
+}
+
+.pill.solid:hover {
+  background: #ffc757;
+  border-color: #ffc757;
+}
+
+.pill.big {
+  padding: 0.9rem 1.8rem;
+  font-size: 1rem;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.scroll {
+  position: absolute;
+  inset: 0;
+  /* Own stacking context, so the panels' -1 scrim stays above the canvas */
+  z-index: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 7rem clamp(1.2rem, 4vw, 3.2rem) 4rem;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* A scrim so copy stays readable over the comb, while the right half of the
+   frame keeps the lit honeycomb */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 -50vw;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    rgb(12 7 3 / 0.97) 0%,
+    rgb(12 7 3 / 0.93) 32%,
+    rgb(12 7 3 / 0.6) 52%,
+    rgb(12 7 3 / 0.12) 70%,
+    transparent 82%
+  );
+  pointer-events: none;
+}
+
+.commander::before {
+  transform: scaleX(-1);
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.eyebrow {
+  margin: 0 0 1.4rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--honey);
+}
+
+.hero h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 6.4vw, 5.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  max-width: 40ch;
+  margin: 1.6rem 0 0;
+  font-size: clamp(0.98rem, 1.2vw, 1.1rem);
+  line-height: 1.65;
+  color: var(--ink-dim);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 2.4rem;
+}
+
+.ghost {
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  border-bottom: 1px solid rgb(200 178 149 / 0.35);
+  padding-bottom: 2px;
+}
+
+.ghost:hover {
+  color: var(--ink);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.5rem, 4vw, 3.4rem);
+  margin: 3.6rem 0 0;
+}
+
+.stats dt {
+  font-family: var(--display);
+  font-size: 1.9rem;
+  color: var(--honey);
+}
+
+.stats dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------------ floraisons */
+
+.panel h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3.6vw, 3rem);
+  letter-spacing: -0.015em;
+}
+
+.section-lede {
+  max-width: 52ch;
+  margin: 1.2rem 0 0;
+  line-height: 1.65;
+  color: var(--ink-dim);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin: 3rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cards li {
+  padding: 1.4rem 1.3rem 1.6rem;
+  border: 1px solid rgb(246 233 213 / 0.12);
+  border-radius: 4px;
+  background: rgb(20 12 5 / 0.55);
+  backdrop-filter: blur(6px);
+  transition: border-color 0.3s, transform 0.3s;
+}
+
+.cards li:hover {
+  border-color: rgb(255 176 31 / 0.55);
+  transform: translateY(-3px);
+}
+
+.cards .when {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--honey);
+}
+
+.cards h3 {
+  margin: 0.7rem 0 0.6rem;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.5rem;
+}
+
+.cards p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+/* ------------------------------------------------------------- commander */
+
+.commander {
+  align-items: flex-end;
+}
+
+.card-cta {
+  max-width: 34rem;
+  padding: 2.6rem 2.4rem;
+  border: 1px solid rgb(255 176 31 / 0.25);
+  border-radius: 6px;
+  background: rgb(18 10 4 / 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.card-cta p {
+  margin: 1.1rem 0 0;
+  line-height: 1.65;
+  color: var(--ink-dim);
+}
+
+.cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-top: 2rem;
+}
+
+.fine {
+  font-size: 0.76rem;
+  color: rgb(200 178 149 / 0.7);
+}
+
+.commander footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 3rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid rgb(246 233 213 / 0.1);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+  text-shadow: 0 1px 6px rgb(12 7 3 / 0.9);
+}
+
+@media (max-width: 720px) {
+  .topbar nav a:not(.pill) {
+    display: none;
+  }
+
+  .commander {
+    align-items: stretch;
+  }
+
+  .panel::before {
+    background: linear-gradient(rgb(12 7 3 / 0.55), rgb(12 7 3 / 0.9));
+  }
+}
