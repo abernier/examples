@@ -11,6 +11,7 @@
 //                instead of the bundled chromium (handy outside the container)
 //   SKIP_SHOTS   "1" to only regenerate index.html from existing previews
 
+import { execSync } from "node:child_process";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { readdir, mkdir, writeFile, access, readFile, stat } from "node:fs/promises";
@@ -22,6 +23,30 @@ const VIEWPORT = { width: 1280, height: 800 };
 const SETTLE_MS = 2500; // let fonts, hero animations and 3D scenes land
 
 const exists = (p) => access(p).then(() => true, () => false);
+
+// The Playwright container image installs the package globally, which a local
+// require() can't see — so fall back to the global root. require() rather than
+// import() because playwright ships CJS.
+function loadPlaywright() {
+  const require = createRequire(import.meta.url);
+  const candidates = ["playwright"];
+  try {
+    candidates.push(path.join(execSync("npm root -g", { encoding: "utf8" }).trim(), "playwright"));
+  } catch {
+    // no npm around; the local require is the only chance
+  }
+  for (const candidate of candidates) {
+    try {
+      return require(candidate);
+    } catch {
+      continue;
+    }
+  }
+  throw new Error(
+    `playwright not found (tried ${candidates.join(", ")}) — run inside the ` +
+      `mcr.microsoft.com/playwright image, or 'npm i --no-save playwright' locally`
+  );
+}
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -84,9 +109,7 @@ const names = (await readdir("dist", { withFileTypes: true }))
 if (!names.length) console.warn("no dist/* folders found");
 
 if (process.env.SKIP_SHOTS !== "1" && names.length) {
-  // require(), not import(): in the Playwright container image the package is
-  // installed globally and only CJS resolution honours NODE_PATH.
-  const { chromium } = createRequire(import.meta.url)("playwright");
+  const { chromium } = loadPlaywright();
   await mkdir(SHOT_DIR, { recursive: true });
 
   const { server, port } = await serve();
@@ -100,7 +123,14 @@ if (process.env.SKIP_SHOTS !== "1" && names.length) {
     try {
       await page.goto(`${origin}/${name}/`, { waitUntil: "load", timeout: 30_000 });
       await page.waitForTimeout(SETTLE_MS);
-      await page.screenshot({ path: `${SHOT_DIR}/${name}.jpg`, type: "jpeg", quality: 72 });
+      await page.screenshot({
+        path: `${SHOT_DIR}/${name}.jpg`,
+        type: "jpeg",
+        quality: 72,
+        // Pages that animate forever otherwise keep the capture waiting.
+        animations: "disabled",
+        timeout: 60_000,
+      });
       console.log(`✓ ${name}`);
     } catch (error) {
       // A broken project shouldn't fail the deploy — it just gets no preview.

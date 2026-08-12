@@ -14,10 +14,15 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  # Keep in sync with preview.sh. The image ships the browsers; the npm package
+  # has to match them, hence the pin.
+  PLAYWRIGHT_VERSION: 1.62.1
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Browsers + system deps already baked in — nothing to install.
+    # Browsers + system deps already baked in — only the npm package to add.
     container: mcr.microsoft.com/playwright:v1.62.1-noble
     environment:
       name: github-pages
@@ -26,9 +31,11 @@ jobs:
       - uses: actions/checkout@v5
 
       # Screenshots each dist/<name>/ into dist/_previews/ and writes dist/index.html.
-      # It serves dist/ under /examples/ itself, so absolute base paths resolve
-      # exactly like they will on Pages.
-      - run: node .github/preview.mjs
+      # preview.mjs serves dist/ under /examples/ itself, so absolute base paths
+      # resolve exactly like they will on Pages.
+      - run: |
+          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          node .github/preview.mjs
 
       - uses: actions/upload-pages-artifact@v4
         with:

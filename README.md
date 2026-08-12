@@ -30,12 +30,12 @@ dist/bar/  ->  https://abernier.github.io/examples/bar/
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
 - The landing page at https://abernier.github.io/examples/ is generated at deploy
   time by `.github/preview.mjs`: it screenshots every `dist/<name>/` (Playwright,
-  in the `mcr.microsoft.com/playwright` container — nothing to install) into
+  in the `mcr.microsoft.com/playwright` container — browsers already baked in) into
   `dist/_previews/` and writes an index of thumbnails. Both are gitignored since
   they're rebuilt on every deploy. `git add -f dist/index.html` to hand-write it
   instead.
-- To preview locally: `npm i --no-save playwright && PW_CHANNEL=chrome node .github/preview.mjs`
-  (uses your installed Chrome, so no browser download).
+- To regenerate previews locally: `./preview.sh` (same container image as CI,
+  needs Docker).
 - Client-side routed SPAs need a `404.html` copy of their `index.html` inside
   their own folder to survive deep links.
 - One-time setup: repo settings → Pages → **Source: GitHub Actions**.
