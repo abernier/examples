@@ -82,7 +82,7 @@ export default function Experience({ scroll }: { scroll: React.RefObject<number>
           <Lightformer intensity={14} color="#ffc46b" rotation-x={Math.PI / 2} position={[0, 5, -9]} scale={[10, 10, 1]} />
           <Lightformer intensity={3} color="#ff9a2e" rotation-y={Math.PI / 2} position={[-5, 1, -1]} scale={[10, 2, 1]} />
           <Lightformer intensity={2} color="#ffdcae" rotation-y={-Math.PI / 2} position={[10, 1, 0]} scale={[20, 2, 1]} />
-          <Lightformer type="ring" intensity={3} color="#ffb01f" rotation-y={Math.PI / 2} position={[-0.1, -1, -5]} scale={10} />
+          <Lightformer form="ring" intensity={3} color="#ffb01f" rotation-y={Math.PI / 2} position={[-0.1, -1, -5]} scale={10} />
         </group>
       </Environment>
 

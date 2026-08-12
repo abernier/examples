@@ -229,15 +229,17 @@ export function buildPatches(jacks, count = 15, seed = 7) {
     const dx = Math.abs(ja.p[0] - jb.p[0])
     const dy = Math.abs(ja.p[1] - jb.p[1])
     const dist = Math.hypot(dx, dy)
-    if (dist < ROW_H * 0.5 || dist > CASE_W * 0.62) continue
+    if (dist < ROW_H * 0.5 || dist > CASE_W * 0.42) continue
     used.add(a)
     used.add(b)
     patches.push({
       a: ja.p,
       b: jb.p,
       color: cableColors[Math.floor(rnd() * cableColors.length)],
-      sag: 0.32 + rnd() * 0.45,
-      bow: 0.3 + rnd() * 0.45,
+      // Kept short on purpose: at the original values a long patch sagged two
+      // world units, i.e. half the case height, and hung out of frame.
+      sag: 0.12 + rnd() * 0.16,
+      bow: 0.18 + rnd() * 0.26,
       lift: 0.16 + rnd() * 0.12,
       phase: rnd() * 6.283,
       speed: 0.45 + rnd() * 0.5,

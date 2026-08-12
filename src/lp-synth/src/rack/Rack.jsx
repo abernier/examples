@@ -25,7 +25,7 @@ const STEP = 60 / BPM / 4 // 16th notes
 
 export function Rack(props) {
   const rack = useMemo(() => buildRack(), [])
-  const patches = useMemo(() => buildPatches(rack.jacks, 16), [rack])
+  const patches = useMemo(() => buildPatches(rack.jacks, 12), [rack])
   const silkscreen = useMemo(() => makeSilkscreen(rack), [rack])
 
   const knobGeo = useMemo(() => zCylinder(24), [])
