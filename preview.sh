@@ -14,7 +14,7 @@ cd "$(dirname "$0")"
 # browsers baked into the image.
 PLAYWRIGHT_VERSION=1.62.1
 
-docker run --rm -it \
+docker run --rm \
   -v "$PWD":/work -w /work \
   "mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble" \
   bash -c "npm install --no-save --no-audit --no-fund playwright@${PLAYWRIGHT_VERSION} >/dev/null && node .github/preview.mjs"

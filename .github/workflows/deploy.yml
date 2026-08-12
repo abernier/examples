@@ -18,6 +18,11 @@ env:
   # Keep in sync with preview.sh. The image ships the browsers; the npm package
   # has to match them, hence the pin.
   PLAYWRIGHT_VERSION: 1.62.1
+  # Vercel: https://examples-steel.vercel.app — token is a repo secret,
+  # `gh secret set VERCEL_TOKEN`. Ids below aren't secret.
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_SCOPE: abernier
+  VERCEL_PROJECT: examples
 
 jobs:
   deploy:
@@ -43,3 +48,14 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Same dist/, second host. Skipped until VERCEL_TOKEN is set, so a missing
+      # secret can't break the Pages deploy.
+      - name: Deploy to Vercel
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          mkdir -p .vercel/output
+          cp -r dist .vercel/output/static
+          echo '{"version":3}' > .vercel/output/config.json
+          npx --yes vercel@latest deploy --prebuilt --prod --yes \
+            --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" --project "$VERCEL_PROJECT"

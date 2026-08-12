@@ -1,8 +1,13 @@
-# Sources stay local — only the assembled dist/ is versioned and deployed
-/src/
-
-.DS_Store
+# Sources are versioned (src/<name>/), their builds are not — dist/<name>/ is the
+# synced copy that ships.
 node_modules/
 package-lock.json
+/src/*/dist/
+
+.DS_Store
+
+# Rebuilt on every deploy by .github/preview.mjs
 dist/_previews/
 dist/index.html
+.vercel
+.env*
