@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "pmndrs": {
+      "source": {
+        "source": "github",
+        "repo": "pmndrs/claude-code-plugin"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "pmndrs@pmndrs": true
+  }
+}
