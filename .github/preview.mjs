@@ -1,4 +1,5 @@
-// Screenshots every dist/<name>/ and writes the dist/index.html landing page.
+// Screenshots every dist/<name>/ into dist/_previews/ — the thumbnails the
+// landing page is built from (src/home/, see ../build-home.sh).
 // Run by .github/workflows/deploy.yml inside the Playwright container image.
 //
 //   node .github/preview.mjs
@@ -12,7 +13,7 @@
 // Env:
 //   PW_CHANNEL   Playwright browser channel, e.g. "chrome" to use a local Chrome
 //                instead of the bundled chromium (handy outside the container)
-//   SKIP_SHOTS   "1" to only regenerate index.html from existing previews
+//   SKIP_SHOTS   "1" to skip screenshotting entirely (keep existing previews)
 //   FORCE_SHOTS  "1" to re-screenshot everything, ignoring the manifest
 
 import { execSync } from "node:child_process";
@@ -25,7 +26,7 @@ import path from "node:path";
 const SHOT_DIR = "dist/_previews";
 const MANIFEST = `${SHOT_DIR}/manifest.json`;
 const MOUNT = "/examples"; // must match the GitHub Pages base path
-const REPO_URL = "https://github.com/abernier/examples";
+// Keep in sync with the card aspect-ratio in src/home/style.css.
 const VIEWPORT = { width: 1280, height: 800 };
 const SETTLE_MS = 2500; // let fonts, hero animations and 3D scenes land
 
@@ -187,155 +188,3 @@ if (process.env.SKIP_SHOTS !== "1" && names.length) {
   await writeFile(MANIFEST, `${JSON.stringify(current, null, 2)}\n`);
   console.log(`${todo.length} screenshot(s) taken, ${names.length - todo.length} reused`);
 }
-
-// --- index.html ---------------------------------------------------------------
-
-// Tracked, not merely present: the generated one is left over from a previous run.
-const indexIsCommitted = (() => {
-  try {
-    execSync("git ls-files --error-unmatch dist/index.html", { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-})();
-
-if (indexIsCommitted) {
-  console.log("dist/index.html is committed — keeping it");
-  process.exit(0);
-}
-
-const cards = await Promise.all(
-  names.map(async (name) => {
-    const shot = (await exists(`${SHOT_DIR}/${name}.jpg`))
-      ? `<img src="_previews/${name}.jpg" alt="" loading="lazy" width="${VIEWPORT.width}" height="${VIEWPORT.height}" />`
-      : `<span class="noshot">no preview</span>`;
-    return `        <li>
-          <a href="${name}/">
-            <span class="shot">${shot}</span>
-            <span class="name">${name}</span>
-          </a>
-        </li>`;
-  })
-);
-
-const html = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>examples</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #0c0c0c;
-        --fg: #fafafa;
-        --card: #171717;
-        --muted: #a1a1a1;
-        --border: #ffffff1a;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        padding: clamp(1.5rem, 5vw, 4rem);
-        background: var(--bg);
-        color: var(--fg);
-        font: 400 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      header { max-width: 72rem; margin: 0 auto 2.5rem; }
-      h1 { margin: 0; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
-      header p { margin: 0.25rem 0 0; color: var(--muted); }
-      .howto {
-        margin: 1.25rem 0 0;
-        padding: 1rem 1.125rem;
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        background: var(--card);
-        max-width: 44rem;
-      }
-      .howto p { margin: 0 0 0.625rem; color: var(--muted); }
-      .howto code {
-        display: block;
-        font: 500 13px/1.9 ui-monospace, SFMono-Regular, Menlo, monospace;
-        color: var(--fg);
-        white-space: pre;
-        overflow-x: auto;
-      }
-      .howto code b { color: #7dd3fc; font-weight: 500; }
-      .howto small { display: block; margin-top: 0.75rem; color: var(--muted); }
-      .howto small code { display: inline; font-size: 12px; white-space: normal; color: inherit; }
-      .howto a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-      /* Fork me on GitHub corner ribbon */
-      .ribbon {
-        position: fixed;
-        top: 3.25rem;
-        right: -5.5rem;
-        z-index: 10;
-        width: 19rem;
-        padding: 0.5rem 0;
-        transform: rotate(45deg);
-        background: var(--fg);
-        color: var(--bg);
-        text-align: center;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.8125rem;
-        box-shadow: 0 2px 12px #0009;
-      }
-      .ribbon:hover { background: #7dd3fc; }
-      @media (max-width: 40rem) { .ribbon { display: none; } }
-      ul {
-        list-style: none;
-        max-width: 72rem;
-        margin: 0 auto;
-        padding: 0;
-        display: grid;
-        gap: 1.25rem;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
-      }
-      ul a { display: block; color: inherit; text-decoration: none; }
-      .shot {
-        display: grid;
-        place-items: center;
-        aspect-ratio: ${VIEWPORT.width} / ${VIEWPORT.height};
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        background: var(--card);
-        transition: border-color 0.15s, transform 0.15s;
-      }
-      .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .noshot { color: var(--muted); font-size: 0.8125rem; }
-      a:hover .shot { border-color: #ffffff40; transform: translateY(-2px); }
-      .name { display: block; margin-top: 0.625rem; font-weight: 500; }
-      .empty { color: var(--muted); }
-    </style>
-  </head>
-  <body>
-    <a class="ribbon" href="${REPO_URL}">Fork me on GitHub</a>
-    <header>
-      <h1>examples</h1>
-      <p>A gallery of react-three-fiber landing pages, each generated in one prompt.</p>
-      <div class="howto">
-        <p>Make your own — fork the repo, open it in Claude Code and run:</p>
-        <code>/new-example <b>jewelry boutique</b>
-/new-example <b>mix 3+ techniques</b>
-/new-example <b>5 usecases in parallel</b></code>
-        <small>
-          It scaffolds <code>src/&lt;slug&gt;/</code> from real
-          <a href="https://github.com/pmndrs/claude-code-plugin">pmndrs</a> demos, builds it,
-          and syncs it here. Then open a PR — see the
-          <a href="${REPO_URL}#contributing-a-landing-page-with-claude-code">README</a>.
-        </small>
-      </div>
-    </header>
-    <ul>
-${cards.join("\n") || '        <li class="empty">no examples yet</li>'}
-    </ul>
-  </body>
-</html>
-`;
-
-await writeFile("dist/index.html", html);
-console.log(`wrote dist/index.html — ${names.length} example(s)`);

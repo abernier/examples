@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate dist/_previews/*.jpg and dist/index.html locally, exactly like CI
-# does — same Playwright container image, same script.
+# does — screenshots in the same Playwright container image, then the landing
+# page with ./build-home.sh (Vite, on the host).
 #
 #   ./preview.sh
 #
@@ -19,5 +20,7 @@ docker run --rm \
   "mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble" \
   bash -c "npm install --no-save --no-audit --no-fund playwright@${PLAYWRIGHT_VERSION} >/dev/null && node .github/preview.mjs"
 
+./build-home.sh
+
 echo
-echo "dist/index.html + dist/_previews/ regenerated"
+echo "dist/_previews/ + dist/index.html regenerated"

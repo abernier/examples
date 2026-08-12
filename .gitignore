@@ -6,8 +6,10 @@ package-lock.json
 
 .DS_Store
 
-# Rebuilt on every deploy by .github/preview.mjs
+# Rebuilt on every deploy — previews by .github/preview.mjs, the landing page
+# by ./build-home.sh (src/home/)
 dist/_previews/
 dist/index.html
+dist/_home/
 .vercel
 .env*

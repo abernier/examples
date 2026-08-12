@@ -51,13 +51,29 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
 - No Jekyll here (that only happens with the legacy "deploy from a branch"
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
 - The landing page at https://abernier.github.io/examples/ is generated at deploy
-  time by `.github/preview.mjs`: it screenshots every `dist/<name>/` (Playwright,
-  in the `mcr.microsoft.com/playwright` container — browsers already baked in) into
-  `dist/_previews/` and writes an index of thumbnails. Both are gitignored since
-  they're rebuilt on every deploy. `git add -f dist/index.html` to hand-write it
-  instead.
-- To regenerate previews locally: `./preview.sh` (same container image as CI,
-  needs Docker).
+  time, in two steps:
+  1. `.github/preview.mjs` screenshots every `dist/<name>/` (Playwright, in the
+     `mcr.microsoft.com/playwright` container — browsers already baked in) into
+     `dist/_previews/`.
+  2. `./build-home.sh` builds `src/home/` (Vite + React + shadcn/ui) into
+     `dist/index.html` + `dist/_home/` — a sidebar listing every `dist/<name>/`
+     (the list is read from disk at build time) and a full-viewport iframe of the
+     selected one. The selection lives in the hash, so
+     https://abernier.github.io/examples/#lp-surf is a link.
+
+  `dist/index.html`, `dist/_home/` and `dist/_previews/` are gitignored: they're
+  rebuilt on every deploy. `git add -f dist/index.html` to hand-write the page
+  instead — `build-home.sh` then leaves it alone.
+- To work on the landing page, from the repo root:
+  ```sh
+  npm run dev       # src/home/ in dev — it serves the real dist/, so the
+                    # iframes and thumbnails resolve
+  npm run build     # ./build-home.sh — build + copy into dist/
+  npm run preview   # serve dist/ as deployed
+  npm run shots     # ./preview.sh — re-screenshot, then build (needs Docker)
+  ```
+- To regenerate everything locally: `./preview.sh` (screenshots in the same
+  container image as CI — needs Docker — then the Vite build).
 - Client-side routed SPAs need a `404.html` copy of their `index.html` inside
   their own folder to survive deep links.
 - One-time setup: repo settings → Pages → **Source: GitHub Actions**.

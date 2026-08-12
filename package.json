@@ -1,0 +1,11 @@
+{
+  "name": "examples",
+  "private": true,
+  "description": "Dumb static host — dist/ is the site. These scripts drive the landing page (src/home/).",
+  "scripts": {
+    "dev": "npm --prefix src/home run dev",
+    "build": "./build-home.sh",
+    "preview": "npm --prefix src/home run preview",
+    "shots": "./preview.sh"
+  }
+}
