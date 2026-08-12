@@ -6,19 +6,26 @@
 // It serves dist/ under /examples/ itself — the same layout as Pages — so
 // projects built with an absolute base render exactly as they will in production.
 //
+// A project is only re-screenshot when its files changed: dist/_previews/manifest.json
+// records a content hash per project, and CI restores that folder from cache.
+//
 // Env:
 //   PW_CHANNEL   Playwright browser channel, e.g. "chrome" to use a local Chrome
 //                instead of the bundled chromium (handy outside the container)
 //   SKIP_SHOTS   "1" to only regenerate index.html from existing previews
+//   FORCE_SHOTS  "1" to re-screenshot everything, ignoring the manifest
 
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { readdir, mkdir, writeFile, access, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const SHOT_DIR = "dist/_previews";
+const MANIFEST = `${SHOT_DIR}/manifest.json`;
 const MOUNT = "/examples"; // must match the GitHub Pages base path
+const REPO_URL = "https://github.com/abernier/examples";
 const VIEWPORT = { width: 1280, height: 800 };
 const SETTLE_MS = 2500; // let fonts, hero animations and 3D scenes land
 
@@ -46,6 +53,23 @@ function loadPlaywright() {
     `playwright not found (tried ${candidates.join(", ")}) — run inside the ` +
       `mcr.microsoft.com/playwright image, or 'npm i --no-save playwright' locally`
   );
+}
+
+// Content hash of a project folder: file paths + bytes, so any change busts it.
+async function hashProject(dir) {
+  const hash = createHash("sha1");
+  const walk = async (current) => {
+    const entries = (await readdir(current, { withFileTypes: true })).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    for (const entry of entries) {
+      const file = path.join(current, entry.name);
+      if (entry.isDirectory()) await walk(file);
+      else hash.update(file).update(await readFile(file));
+    }
+  };
+  await walk(dir);
+  return hash.digest("hex");
 }
 
 const MIME = {
@@ -109,43 +133,74 @@ const names = (await readdir("dist", { withFileTypes: true }))
 if (!names.length) console.warn("no dist/* folders found");
 
 if (process.env.SKIP_SHOTS !== "1" && names.length) {
-  const { chromium } = loadPlaywright();
   await mkdir(SHOT_DIR, { recursive: true });
 
-  const { server, port } = await serve();
-  const origin = `http://127.0.0.1:${port}${MOUNT}`;
+  const previous = JSON.parse(await readFile(MANIFEST, "utf8").catch(() => "{}"));
+  const current = {};
+  for (const name of names) current[name] = await hashProject(path.join("dist", name));
 
-  const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
-  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
-
+  const force = process.env.FORCE_SHOTS === "1";
+  const todo = [];
   for (const name of names) {
-    const page = await context.newPage();
-    try {
-      await page.goto(`${origin}/${name}/`, { waitUntil: "load", timeout: 30_000 });
-      await page.waitForTimeout(SETTLE_MS);
-      await page.screenshot({
-        path: `${SHOT_DIR}/${name}.jpg`,
-        type: "jpeg",
-        quality: 72,
-        // Pages that animate forever otherwise keep the capture waiting.
-        animations: "disabled",
-        timeout: 60_000,
-      });
-      console.log(`✓ ${name}`);
-    } catch (error) {
-      // A broken project shouldn't fail the deploy — it just gets no preview.
-      console.log(`✗ ${name} — ${error.message.split("\n")[0]}`);
-    }
-    await page.close();
+    const upToDate =
+      !force && previous[name] === current[name] && (await exists(`${SHOT_DIR}/${name}.jpg`));
+    if (upToDate) console.log(`· ${name} (unchanged)`);
+    else todo.push(name);
   }
 
-  await browser.close();
-  server.close();
+  if (todo.length) {
+    const { chromium } = loadPlaywright();
+    const { server, port } = await serve();
+    const origin = `http://127.0.0.1:${port}${MOUNT}`;
+
+    const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined });
+    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
+
+    for (const name of todo) {
+      const page = await context.newPage();
+      try {
+        await page.goto(`${origin}/${name}/`, { waitUntil: "load", timeout: 30_000 });
+        await page.waitForTimeout(SETTLE_MS);
+        await page.screenshot({
+          path: `${SHOT_DIR}/${name}.jpg`,
+          type: "jpeg",
+          quality: 72,
+          // Pages that animate forever otherwise keep the capture waiting.
+          animations: "disabled",
+          timeout: 60_000,
+        });
+        console.log(`✓ ${name}`);
+      } catch (error) {
+        // A broken project shouldn't fail the deploy — it just gets no preview,
+        // and no manifest entry, so the next run retries it.
+        console.log(`✗ ${name} — ${error.message.split("\n")[0]}`);
+        delete current[name];
+      }
+      await page.close();
+    }
+
+    await browser.close();
+    server.close();
+  }
+
+  // Drop entries for projects that no longer exist, then record what we have.
+  await writeFile(MANIFEST, `${JSON.stringify(current, null, 2)}\n`);
+  console.log(`${todo.length} screenshot(s) taken, ${names.length - todo.length} reused`);
 }
 
 // --- index.html ---------------------------------------------------------------
 
-if (await exists("dist/index.html")) {
+// Tracked, not merely present: the generated one is left over from a previous run.
+const indexIsCommitted = (() => {
+  try {
+    execSync("git ls-files --error-unmatch dist/index.html", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+if (indexIsCommitted) {
   console.log("dist/index.html is committed — keeping it");
   process.exit(0);
 }
@@ -188,9 +243,48 @@ const html = `<!doctype html>
         font: 400 14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      header { max-width: 72rem; margin: 0 auto 2rem; }
+      header { max-width: 72rem; margin: 0 auto 2.5rem; }
       h1 { margin: 0; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; }
       header p { margin: 0.25rem 0 0; color: var(--muted); }
+      .howto {
+        margin: 1.25rem 0 0;
+        padding: 1rem 1.125rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background: var(--card);
+        max-width: 44rem;
+      }
+      .howto p { margin: 0 0 0.625rem; color: var(--muted); }
+      .howto code {
+        display: block;
+        font: 500 13px/1.9 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: var(--fg);
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .howto code b { color: #7dd3fc; font-weight: 500; }
+      .howto small { display: block; margin-top: 0.75rem; color: var(--muted); }
+      .howto small code { display: inline; font-size: 12px; white-space: normal; color: inherit; }
+      .howto a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+      /* Fork me on GitHub corner ribbon */
+      .ribbon {
+        position: fixed;
+        top: 3.25rem;
+        right: -5.5rem;
+        z-index: 10;
+        width: 19rem;
+        padding: 0.5rem 0;
+        transform: rotate(45deg);
+        background: var(--fg);
+        color: var(--bg);
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.8125rem;
+        box-shadow: 0 2px 12px #0009;
+      }
+      .ribbon:hover { background: #7dd3fc; }
+      @media (max-width: 40rem) { .ribbon { display: none; } }
       ul {
         list-style: none;
         max-width: 72rem;
@@ -200,7 +294,7 @@ const html = `<!doctype html>
         gap: 1.25rem;
         grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
       }
-      a { display: block; color: inherit; text-decoration: none; }
+      ul a { display: block; color: inherit; text-decoration: none; }
       .shot {
         display: grid;
         place-items: center;
@@ -219,9 +313,22 @@ const html = `<!doctype html>
     </style>
   </head>
   <body>
+    <a class="ribbon" href="${REPO_URL}">Fork me on GitHub</a>
     <header>
       <h1>examples</h1>
-      <p>Static builds, served from this repo.</p>
+      <p>A gallery of react-three-fiber landing pages, each generated in one prompt.</p>
+      <div class="howto">
+        <p>Make your own — fork the repo, open it in Claude Code and run:</p>
+        <code>/new-example <b>jewelry boutique</b>
+/new-example <b>mix 3+ techniques</b>
+/new-example <b>5 usecases in parallel</b></code>
+        <small>
+          It scaffolds <code>src/&lt;slug&gt;/</code> from real
+          <a href="https://github.com/pmndrs/claude-code-plugin">pmndrs</a> demos, builds it,
+          and syncs it here. Then open a PR — see the
+          <a href="${REPO_URL}#contributing-a-landing-page-with-claude-code">README</a>.
+        </small>
+      </div>
     </header>
     <ul>
 ${cards.join("\n") || '        <li class="empty">no examples yet</li>'}

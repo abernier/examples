@@ -35,6 +35,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Previews survive between runs, so only projects whose files changed get
+      # re-screenshot (preview.mjs compares hashes in _previews/manifest.json).
+      # The key never hits exactly when dist/ changed — restore-keys gets us the
+      # latest one anyway, which is the point.
+      - uses: actions/cache@v4
+        with:
+          path: dist/_previews
+          key: previews-${{ hashFiles('dist/**') }}
+          restore-keys: previews-
+
       # Screenshots each dist/<name>/ into dist/_previews/ and writes dist/index.html.
       # preview.mjs serves dist/ under /examples/ itself, so absolute base paths
       # resolve exactly like they will on Pages.
@@ -49,11 +59,16 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
-      # Same dist/, second host. Skipped until VERCEL_TOKEN is set, so a missing
-      # secret can't break the Pages deploy.
+      # Same dist/, second host. No-op until VERCEL_TOKEN is set, so a missing
+      # secret can't break the Pages deploy. The check is in the shell on
+      # purpose: a step-level `if: env.VERCEL_TOKEN != ''` reads the masked
+      # value and skips even when the secret is there.
       - name: Deploy to Vercel
-        if: env.VERCEL_TOKEN != ''
         run: |
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN not set — skipping Vercel deploy"
+            exit 0
+          fi
           mkdir -p .vercel/output
           cp -r dist .vercel/output/static
           echo '{"version":3}' > .vercel/output/config.json
