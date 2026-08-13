@@ -80,11 +80,27 @@ reconstructing it afterwards means digging through transcripts.
 ```
 
 Only `prompt` is required, and it is **verbatim** — the argument the human typed,
-not a tidied-up version of it, not your restatement of the task. `brief` is for
-when the prompt does not narrow down to this one page: a batch prompt built five
-sites, so each manifest says which one it got. `date` is the day it was built,
-`model` the family that built it (`opus`, `sonnet`, `haiku`), `demos` the pmndrs
-demo slugs it borrows from — same list as the README.
+not a tidied-up version of it, not your restatement of the task.
+
+`brief` is the other half: what that prompt actually resolved to by the time
+this page got built. `/new-example ❤️` is not an instruction, it is an emoji —
+the instruction is what the skill turned it into once the argument was applied,
+the slug chosen and the ambiguity settled. Write that. Two cases where it does
+the most work:
+
+- **A slash-command invocation.** Say which argument, what it resolved to, and
+  any call you made along the way — if you asked the human which of two readings
+  they meant, the answer they gave belongs here. With no argument at all, say
+  which untouched usecase you picked.
+- **A batch.** One prompt built five sites, so each manifest names the direction
+  its own agent was handed.
+
+Skip it only when the prompt already *is* the instruction, and reads that way
+without you.
+
+`date` is the day it was built, `model` the family that built it (`opus`,
+`sonnet`, `haiku`), `demos` the pmndrs demo slugs it borrows from — same list as
+the README.
 
 `sync.sh` copies the manifest into `dist/<slug>/`, and `src/home/vite.config.ts`
 reads it from there at build time.
@@ -192,5 +208,6 @@ particle fields. Each agent runs steps 1–5 in its own `src/<slug>/`; run step 
 yourself once they all report back, so the commit stays coherent.
 
 Every manifest in a batch carries the *same* `prompt` — the one prompt the human
-typed, once — and its own `brief`, the direction you handed that agent. Pass both
-strings down in the agent's instructions so it does not have to guess either.
+typed, once — and its own `brief`, the direction you handed that agent, which is
+what that prompt resolved to for that one site. Pass both strings down in the
+agent's instructions so it does not have to guess either.
