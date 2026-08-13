@@ -80,6 +80,15 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
   review them. Pages still only ever serves `main`, and the preview never
   touches the Vercel project's production URL. PRs from forks skip the job: no
   secrets there.
+
+  `vercel.json` sets `git.deploymentEnabled: false`, which switches off Vercel's
+  own Git integration. It can't build this site: the gallery needs the Playwright
+  screenshots (`.github/preview.mjs`) and the social cards (`.github/og.mjs`),
+  neither of which happens in a `vercel build`, and it has no access to the
+  previews cache — so it either shipped a thumbnail-less gallery or, once the
+  output directory didn't match, nothing at all. CI builds the whole `dist/` and
+  hands it over prebuilt instead; `vercel deploy --prebuilt` is a CLI deploy and
+  is unaffected by that switch.
 - To work on the landing page, from the repo root:
   ```sh
   npm run dev       # src/home/ in dev — it serves the real dist/, so the
