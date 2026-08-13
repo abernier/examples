@@ -104,7 +104,7 @@ function Prompt({ manifest, open, onOpenChange }: {
       {/* The avatar is the toggle, so it must not move when the message opens.
           Undo the lift the component applies once a footer exists — it would
           shift the button 2rem up under the cursor mid-click. */}
-      <MessageAvatar className="bg-background/80 size-8 shadow-lg ring-1 ring-border backdrop-blur-md group-has-data-[slot=message-footer]/message:translate-y-0">
+      <MessageAvatar className="bg-background/80 size-10 shadow-lg ring-1 ring-border backdrop-blur-md group-has-data-[slot=message-footer]/message:translate-y-0">
         <button
           type="button"
           aria-expanded={open}
@@ -112,7 +112,7 @@ function Prompt({ manifest, open, onOpenChange }: {
           onClick={() => onOpenChange(!open)}
           className="grid size-full cursor-pointer place-items-center opacity-80 transition-opacity hover:opacity-100"
         >
-          <ClaudeStar className="size-4" />
+          <ClaudeStar className="size-5" />
         </button>
       </MessageAvatar>
       {open && (
