@@ -6,8 +6,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
-import { CameraControls } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { CameraControls, useProgress } from "@react-three/drei";
 import type { Square } from "chess.js";
 
 import {
@@ -75,12 +75,74 @@ function Framing({
   return null;
 }
 
+/**
+ * The end of the setting-up, reported from inside the loop: the toys are on the
+ * board *and* a frame with them in it has been drawn.
+ *
+ * Downloaded is not the same as ready here, and the gap is seconds wide. Once
+ * the last file lands, `Piece` still has twelve rigs to pose, measure vertex by
+ * vertex and stand up, all of it on the main thread — and a lid that lifts on
+ * the last byte lifts onto a blank page and sits there while that runs. This
+ * sits after the toys inside their own Suspense boundary, so it can't mount
+ * until every one of them has rendered, and then waits out a frame so the one
+ * being called about is already on the glass.
+ */
+function Ready({ onReady }: { onReady: () => void }) {
+  const frames = useRef(0);
+  useFrame(() => {
+    if (++frames.current === 2) onReady();
+  });
+  return null;
+}
+
+/**
+ * The lid, still on the box.
+ *
+ * The room costs nothing — floor, wall and props are geometry, and both textures
+ * are painted into canvases at startup — so the only thing this page fetches is
+ * the toys, twelve files of them, all asked for at once by the `preload` at the
+ * top of `Piece`. That makes `useProgress` an honest fraction: everything has
+ * registered with the loading manager before the first byte lands, so the bar
+ * can't fill up and then find more to download.
+ *
+ * What it can't know about is the standing-up afterwards, so the download is
+ * only worth the first nine tenths of the bar and `Ready` closes it. A bar that
+ * sat full through the pause that follows would read as a page that has stopped
+ * — and it is a pause you can't animate through anyway, the main thread being
+ * where the work is.
+ *
+ * It's the page's own sky behind it, which is the whole trick: no flash at
+ * either end, just a line of text fading off a background that was already
+ * there. Then it goes for good — nothing is ever fetched twice.
+ */
+function Lid({ ready }: { ready: boolean }) {
+  const { progress } = useProgress();
+  const [gone, setGone] = useState(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => setGone(true), 700);
+    return () => clearTimeout(timer);
+  }, [ready]);
+
+  if (gone) return null;
+  return (
+    <div className={`lid${ready ? " done" : ""}`} aria-hidden={ready}>
+      <p>On sort les jouets du coffre…</p>
+      <div className="bar">
+        <i style={{ transform: `scaleX(${ready ? 1 : (progress / 100) * 0.9})` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [game, setGame] = useState(newGame);
   const [toys, setToys] = useState(game.toys);
   const [selected, setSelected] = useState<Square | null>(null);
   const [status, setStatus] = useState("playing");
   const [controls, setControls] = useState<CameraControls | null>(null);
+  const [ready, setReady] = useState(false);
 
   const play = useCallback(
     (from: Square, to: Square) => {
@@ -203,8 +265,11 @@ export default function App() {
         <Framing controls={controls} side={mine === "w" ? 1 : -1} />
         <Room />
         <Board targets={targets} selected={selected} actionable={actionable} onPick={pick} />
-        {/* The toys arrive from five files; the board is playable before they
-            land, which is the point of keeping the boundary this tight. */}
+        {/* The toys arrive one file at a time, and the boundary is this tight so
+            each one stands up the moment its own file lands rather than the
+            board waiting on the slowest. The `Lid` is over all of it until the
+            last one is out — twelve toys popping in one by one is a page still
+            loading, not a game being set up. */}
         <Suspense fallback={null}>
           {toys.map((toy: Toy) => (
             <Piece
@@ -213,6 +278,7 @@ export default function App() {
               selected={toy.square === selected && toy.takenAt === null}
             />
           ))}
+          <Ready onReady={() => setReady(true)} />
         </Suspense>
         {/* camera-controls rather than OrbitControls: the same drag, but it
             damps every move instead of stepping to it, which is what the orbit
@@ -249,6 +315,9 @@ export default function App() {
           ? "ouvrez la page pour jouer à deux"
           : "envoyez l’adresse de la page à un ami pour qu’il prenne la cuisine"}
       </p>
+      {/* Last, so it covers the two notes above without either of them needing
+          to know it exists. */}
+      <Lid ready={ready} />
     </>
   );
 }
