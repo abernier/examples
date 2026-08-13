@@ -145,7 +145,7 @@ function HowTo() {
         <DialogHeader>
           <DialogTitle>Make your own</DialogTitle>
           <DialogDescription>
-            Fork the repo, open it in Claude Code and run:
+            Fork the repo, open it in Claude Code and ask for anything:
           </DialogDescription>
         </DialogHeader>
         <pre className="bg-muted text-muted-foreground overflow-x-auto rounded-md p-3 font-mono text-xs leading-6">
@@ -155,11 +155,14 @@ function HowTo() {
             {'\n/new-example '}
             <span className="text-foreground">mix 3+ techniques</span>
             {'\n/new-example '}
-            <span className="text-foreground">5 usecases in parallel</span>
+            <span className="text-foreground">❤️</span>
+            {'\n/new-example '}
+            <span className="text-foreground">5 of them in parallel</span>
           </code>
         </pre>
         <p className="text-muted-foreground text-xs">
-          It scaffolds <code className="font-mono">src/&lt;slug&gt;/</code> from real{' '}
+          Your prompt is the brief — the skill doesn't narrow it. It scaffolds{' '}
+          <code className="font-mono">src/&lt;slug&gt;/</code> from real{' '}
           <a
             className="underline underline-offset-2"
             href="https://github.com/pmndrs/claude-code-plugin"

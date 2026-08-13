@@ -11,23 +11,26 @@ dist/foo/  ->  https://abernier.github.io/examples/foo/
 dist/bar/  ->  https://abernier.github.io/examples/bar/
 ```
 
-## Contributing a landing page (with Claude Code)
+## Contributing (with Claude Code)
 
-Most projects here are react-three-fiber landing pages generated with the
+Everything here is a react-three-fiber project generated with the
 [pmndrs plugin](https://github.com/pmndrs/claude-code-plugin). Fork the repo,
-open it in Claude Code and:
+open it in Claude Code and type whatever you want built — the prompt *is* the
+brief, the skill doesn't narrow it:
 
 ```
-/new-example jewelry-boutique          # a landing page for a usecase
-/new-example mix 3+ techniques         # a landing page mixing pmndrs demos
-/new-example 5 usecases in parallel    # a batch, one agent each
+/new-example jewelry-boutique
+/new-example mix 3+ techniques
+/new-example ❤️
+/new-example 5 of them in parallel
 ```
 
 The skill lives in `.claude/skills/new-example/` — it scaffolds `src/<slug>/`,
-builds the scene from real demos of the `pmndrs:examples` skill, syncs it into
-`dist/` and tells you what to commit. The pmndrs plugin is declared in
-`.claude/settings.json`, so a fresh clone gets it on first launch (accept the
-prompt); otherwise `/plugin marketplace add pmndrs/claude-code-plugin`.
+ports the scene from real demos of the `pmndrs:examples` skill, records the
+prompt in a manifest, syncs it into `dist/` and tells you what to commit. The
+pmndrs plugin is declared in `.claude/settings.json`, so a fresh clone gets it on
+first launch (accept the prompt); otherwise
+`/plugin marketplace add pmndrs/claude-code-plugin`.
 
 Then open a PR — `src/<slug>/` + `dist/<slug>/`.
 
