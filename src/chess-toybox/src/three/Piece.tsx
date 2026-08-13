@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useRef } from 'react'
+import { forwardRef, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, type ThreeElements, type ThreeEvent } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -339,6 +339,18 @@ function Hitbox(props: ThreeElements['mesh']) {
   )
 }
 
+// The cursor is one thing and there are thirty-two pieces, so it is counted
+// rather than set. R3F does not promise that the `pointerout` of the piece you
+// are leaving arrives before the `pointerover` of the one you are entering, and
+// on the wrong order a plain assignment leaves you with an arrow while you are
+// very much over something clickable.
+let hovering = 0
+
+function cursor(delta: number) {
+  hovering = Math.max(0, hovering + delta)
+  document.body.style.cursor = hovering ? 'pointer' : 'auto'
+}
+
 // Where a toy goes once it's out: sat on the floor beside the board, on its own
 // side of it, so who is winning is readable off the carpet.
 function takenPosition(toy: Toy): [number, number, number] {
@@ -376,13 +388,23 @@ export function Piece({
 
   const enter = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation()
+    if (hovered.current) return
     hovered.current = true
-    document.body.style.cursor = 'pointer'
+    cursor(1)
   }
   const leave = () => {
+    if (!hovered.current) return
     hovered.current = false
-    document.body.style.cursor = 'auto'
+    cursor(-1)
   }
+
+  // The hitbox goes away under the pointer more often than you'd think: a piece
+  // is taken while you are over it, or one stops being pickable the moment
+  // another is picked up. R3F fires no `pointerout` for a hitbox that simply
+  // stopped existing, so without this the cursor stays a hand and the base stays
+  // lit for a piece that isn't there any more.
+  const live = pickable && !taken
+  useEffect(() => (live ? leave : undefined), [live])
 
   useFrame((_, delta) => {
     if (taken) {
@@ -423,7 +445,7 @@ export function Piece({
     }
     easing.damp3(ref.current.position, target, taken ? 0.35 : 0.2, delta)
     easing.dampE(ref.current.rotation, rotation, 0.28, delta)
-    const lit = hovered.current && !taken
+    const lit = hovered.current && live
     easing.damp3(ref.current.scale, selected ? 1.12 : lit ? 1.06 : 1, 0.18, delta)
     easing.damp(glow.current, 'emissiveIntensity', selected ? 0.7 : lit ? 0.4 : 0, 0.12, delta)
   })
