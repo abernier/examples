@@ -1,0 +1,135 @@
+:root {
+  /* Nothing is fetched here — the rounded stack, in the order each platform has
+     one, because a box of toys is not a printed book. */
+  font-family: ui-rounded, 'SF Pro Rounded', 'Segoe UI Variable', 'Trebuchet MS', system-ui,
+    sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #a8d8f5;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+canvas {
+  touch-action: none;
+}
+
+/* A slip of paper left on the desk, not a UI panel. */
+.hud {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  left: max(1rem, env(safe-area-inset-left));
+  width: min(16rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem 1rem;
+  background: #fffdf6;
+  color: #2f4356;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 60%) inset,
+    0 14px 26px -14px rgb(24 52 78 / 45%);
+  transform: rotate(-1deg);
+  border-radius: 0.9rem;
+}
+
+.hud h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #2f6cb5;
+}
+
+.hud .cast {
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(47 108 181 / 22%);
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #7d8fa0;
+}
+
+.hud p {
+  margin: 0 0 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.hud .loud {
+  font-weight: 700;
+  color: #2f6cb5;
+}
+
+/* The fallen, named — the set beside the board is the real tally, this reads it
+   out. */
+.tally {
+  min-height: 1.4em;
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: #7d8fa0;
+}
+
+.tally span::after {
+  content: ', ';
+}
+
+.tally span:last-child::after {
+  content: '.';
+}
+
+.tally .tan {
+  color: #b08b46;
+}
+
+.tally .green {
+  color: #4e7c3f;
+}
+
+.hud button {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgb(47 108 181 / 35%);
+  background: transparent;
+  color: #2f6cb5;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.hud button:hover {
+  background: rgb(47 108 181 / 8%);
+}
+
+.hint {
+  position: fixed;
+  bottom: max(0.9rem, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.35rem 0.9rem;
+  background: rgb(255 253 246 / 82%);
+  color: #2f4356;
+  font-size: 0.72rem;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+@media (max-width: 34rem) {
+  .hint {
+    display: none;
+  }
+}

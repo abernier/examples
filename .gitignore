@@ -15,3 +15,8 @@ dist/_home/
 
 # Scratch dir the Vercel CLI builds to stage dist/ as a prebuilt output
 .vercel/
+
+# Downloads landing zone: raw .glb straight off Sketchfab, before they are
+# decimated and compressed into an example's own public/. Never committed —
+# what ships is the processed file.
+.models-in/
