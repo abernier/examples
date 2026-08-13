@@ -323,17 +323,20 @@ const Plinth = forwardRef<THREE.MeshStandardMaterial, { color: Color }>(function
 })
 
 /**
- * What the pointer actually hits: a box the size of the square, invisible but
- * still solid to the raycaster — `material.visible`, not `object.visible`, since
- * the second one would take it out of the raycast as well.
+ * What the pointer actually hits: the piece's square, a flat slab lying on the
+ * board. Invisible by `material.visible` and not `object.visible`, since the
+ * second one would take it out of the raycast as well.
+ *
+ * Flat is the whole point. A box tall enough to cover a piece stands between the
+ * pointer and every square behind it — on a board seen from this low, that is
+ * most of the board, and the click meant for an empty square kept landing on
+ * whoever was standing in front of it. Lying down, a piece can't occlude
+ * anything but the sliver of floor immediately behind its own square.
  */
 function Hitbox(props: ThreeElements['mesh']) {
   return (
-    // Deliberately shorter than the tallest toys. A box that covered Woody to
-    // the hat would stand between the pointer and every square behind him — on a
-    // board seen from this low, that is most of the board.
-    <mesh position={[0, 0.5, 0]} {...props}>
-      <boxGeometry args={[0.92, 1, 0.92]} />
+    <mesh position={[0, 0.07, 0]} {...props}>
+      <boxGeometry args={[0.96, 0.14, 0.96]} />
       <meshBasicMaterial visible={false} />
     </mesh>
   )
@@ -365,13 +368,10 @@ const rotation = new THREE.Euler()
 export function Piece({
   toy,
   selected,
-  pickable,
   onSelect,
 }: {
   toy: Toy
   selected: boolean
-  /** Whether the pointer should stop at this toy at all — see `App`. */
-  pickable: boolean
   onSelect: () => void
 }) {
   const ref = useRef<THREE.Group>(null!)
@@ -398,12 +398,11 @@ export function Piece({
     cursor(-1)
   }
 
-  // The hitbox goes away under the pointer more often than you'd think: a piece
-  // is taken while you are over it, or one stops being pickable the moment
-  // another is picked up. R3F fires no `pointerout` for a hitbox that simply
-  // stopped existing, so without this the cursor stays a hand and the base stays
-  // lit for a piece that isn't there any more.
-  const live = pickable && !taken
+  // The hitbox goes away under the pointer more often than you'd think — a piece
+  // is taken while you are standing over it. R3F fires no `pointerout` for a
+  // hitbox that simply stopped existing, so without this the cursor stays a hand
+  // and the base stays lit for a piece that isn't there any more.
+  const live = !taken
   useEffect(() => (live ? leave : undefined), [live])
 
   useFrame((_, delta) => {
@@ -454,7 +453,7 @@ export function Piece({
     // Set out on the board, not dropped onto it from the ceiling: the game
     // starts with the toys already where they belong.
     <group ref={ref} position={[x0, 0.3, z0]}>
-      {pickable && !taken && (
+      {live && (
         <Hitbox
           onClick={(event) => (event.stopPropagation(), onSelect())}
           onPointerOver={enter}

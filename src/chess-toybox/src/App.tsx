@@ -160,15 +160,6 @@ export default function App() {
               key={toy.id}
               toy={toy}
               selected={toy.square === selected && toy.takenAt === null}
-              // With a toy in hand, everything that isn't the toy or somewhere
-              // it can go stops answering the pointer. A toy stands a square
-              // tall, so from this camera the ones in front of a target sit
-              // between it and the ray, and the click meant for the square
-              // lands on a bystander instead. There is nothing else worth
-              // clicking at that moment anyway.
-              pickable={
-                !selected || toy.square === selected || targets.has(toy.square)
-              }
               onSelect={() => pick(toy.square)}
             />
           ))}
