@@ -65,7 +65,12 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
      https://abernier.github.io/examples/#lp-surf is a link. Over the bottom-right
      corner of the iframe it shows the prompt the page was built from, read from
      `dist/<name>/manifest.json` (written in `src/<name>/`, carried over by
-     `sync.sh` — see `.claude/skills/new-example/SKILL.md`).
+     `sync.sh` — see `.claude/skills/new-example/SKILL.md`). The same manifest
+     feeds the filter in the sidebar header: its `tags` are the techniques on
+     screen (`water`, `caustics`, `physics`, …) and picking them narrows the
+     list, while anything typed but not picked searches the slug, the title and
+     the prompt and brief. No tag list is hardcoded — the vocabulary is whatever
+     the manifests use.
   3. `.github/og.mjs` writes the social card tags into every `index.html` in
      `dist/` — `og:image` is that project's thumbnail, `og:title`/`og:description`
      are read from the page's own `<title>`/`<meta name=description>`. The gallery

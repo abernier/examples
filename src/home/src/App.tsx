@@ -1,8 +1,19 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { ExternalLink } from 'lucide-react'
 import examples from 'virtual:examples'
 
 import { Button } from '@/components/ui/button'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  useComboboxAnchor,
+} from '@/components/ui/combobox'
 import {
   Message,
   MessageAvatar,
@@ -68,7 +79,88 @@ function Thumb({ name, shot }: { name: string; shot: boolean }) {
   )
 }
 
-type Manifest = NonNullable<(typeof examples)[number]['manifest']>
+type Example = (typeof examples)[number]
+type Manifest = NonNullable<Example['manifest']>
+
+// The vocabulary is whatever the manifests happen to use — no list is hardcoded
+// here, so a new example with a new tag adds it to the filter by existing.
+const TAG_COUNTS = examples.reduce<Record<string, number>>((counts, example) => {
+  for (const tag of example.manifest?.tags ?? []) counts[tag] = (counts[tag] ?? 0) + 1
+  return counts
+}, {})
+const TAGS = Object.keys(TAG_COUNTS).sort()
+
+// Tags narrow — every one picked has to be on the page. Text widens: it looks at
+// the slug, the title, and the prompt and brief the page came out of, so you can
+// find a page by something you remember asking for rather than by its name.
+function matches(example: Example, tags: string[], query: string) {
+  const own = example.manifest?.tags ?? []
+  if (!tags.every((tag) => own.includes(tag))) return false
+  if (!query) return true
+  const needle = query.toLowerCase()
+  const haystack = [
+    example.name,
+    example.manifest?.title,
+    example.manifest?.prompt,
+    example.manifest?.brief,
+    ...own,
+  ]
+  return haystack.some((field) => field?.toLowerCase().includes(needle))
+}
+
+// One control for both halves of the filter: the chips are the tags, and
+// whatever is left in the input is the free-text query. Typing narrows the tag
+// list *and* the sidebar at the same time — pick a tag and it becomes a chip,
+// don't and the text keeps filtering on its own.
+function Filter({
+  tags,
+  onTagsChange,
+  query,
+  onQueryChange,
+}: {
+  tags: string[]
+  onTagsChange: (tags: string[]) => void
+  query: string
+  onQueryChange: (query: string) => void
+}) {
+  const anchor = useComboboxAnchor()
+
+  return (
+    <Combobox
+      multiple
+      items={TAGS}
+      value={tags}
+      onValueChange={onTagsChange}
+      inputValue={query}
+      onInputValueChange={onQueryChange}
+    >
+      <ComboboxChips ref={anchor}>
+        {tags.map((tag) => (
+          <ComboboxChip key={tag}>{tag}</ComboboxChip>
+        ))}
+        <ComboboxChipsInput
+          className="h-6 text-xs"
+          aria-label="Filter the examples"
+          placeholder={tags.length ? '' : 'tag, name or prompt…'}
+        />
+      </ComboboxChips>
+      {/* Anchored on the chips rather than the input, which moves as they wrap. */}
+      <ComboboxContent anchor={anchor}>
+        <ComboboxEmpty className="px-2 py-2 text-xs">
+          no tag says that — filtering on the text alone
+        </ComboboxEmpty>
+        <ComboboxList>
+          {(tag: string) => (
+            <ComboboxItem key={tag} value={tag} className="text-xs">
+              {tag}
+              <span className="text-muted-foreground ml-auto tabular-nums">{TAG_COUNTS[tag]}</span>
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
 
 // Claude's asterisk — ten tapered arms, pointed at the centre, rounded outside.
 // Drawn here rather than fetched: the gallery ships as static files.
@@ -207,22 +299,40 @@ export default function App() {
   // Closed until asked for, and sticky across examples either way.
   const [promptOpen, setPromptOpen] = useState(false)
 
+  // The filter only ever touches the sidebar. What's on screen stays on screen —
+  // it's in the hash, and filtering it away would be a surprise.
+  const [tags, setTags] = useState<string[]>([])
+  const [query, setQuery] = useState('')
+  const shown = useMemo(
+    () => examples.filter((example) => matches(example, tags, query)),
+    [tags, query]
+  )
+  const filtering = tags.length > 0 || query !== ''
+
   return (
     <SidebarProvider className="h-svh">
       <Sidebar>
-        <SidebarHeader className="gap-1 p-4">
-          <h1 className="text-sm font-semibold tracking-tight">examples</h1>
-          <p className="text-muted-foreground text-xs">
-            react-three-fiber landing pages, each generated in one prompt.
-          </p>
+        <SidebarHeader className="gap-3 p-4">
+          <div className="grid gap-1">
+            <h1 className="text-sm font-semibold tracking-tight">examples</h1>
+            <p className="text-muted-foreground text-xs">
+              react-three-fiber landing pages, each generated in one prompt.
+            </p>
+          </div>
+          <Filter tags={tags} onTagsChange={setTags} query={query} onQueryChange={setQuery} />
         </SidebarHeader>
         <SidebarSeparator />
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>{examples.length} examples</SidebarGroupLabel>
+            <SidebarGroupLabel>
+              {filtering ? `${shown.length} of ${examples.length}` : `${examples.length} examples`}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
+              {filtering && shown.length === 0 && (
+                <p className="text-muted-foreground px-2 py-6 text-center text-xs">nothing matches</p>
+              )}
               <SidebarMenu className="gap-2">
-                {examples.map((example) => (
+                {shown.map((example) => (
                   <SidebarMenuItem key={example.name}>
                     {/* Text-free: the shot is the label, so it goes edge to edge
                         and the active one is marked with a ring, not a bg. */}
