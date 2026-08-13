@@ -3,15 +3,19 @@ import { ExternalLink } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import examples from 'virtual:examples'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Combobox,
   ComboboxChip,
   ComboboxChips,
   ComboboxChipsInput,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
   ComboboxValue,
   useComboboxAnchor,
@@ -32,6 +36,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -39,7 +44,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -84,19 +88,46 @@ function Thumb({ name, shot }: { name: string; shot: boolean }) {
 type Example = (typeof examples)[number]
 type Manifest = NonNullable<Example['manifest']>
 
-// The vocabulary is whatever the manifests happen to use — no list is hardcoded
-// here, so a new example with a new tag adds it to the filter by existing.
-const TAG_COUNTS = examples.reduce<Record<string, number>>((counts, example) => {
-  for (const tag of example.manifest?.tags ?? []) counts[tag] = (counts[tag] ?? 0) + 1
-  return counts
-}, {})
-const TAGS = Object.keys(TAG_COUNTS).sort()
+// Two vocabularies in the one filter, and neither list is hardcoded — both are
+// read off the manifests, so a new example brings its own words with it.
+//
+// A `kind` is what the page *is* (`landing`, `game`): one per example, so
+// picking two widens to their union. A `tag` is a technique on screen (`water`,
+// `caustics`): several per example, so picking two narrows to the pages carrying
+// both. They share one input, so kinds go in prefixed — `kind:landing` — and
+// that prefix is what tells the two apart everywhere after.
+const KIND = 'kind:'
+const label = (option: string) => (option.startsWith(KIND) ? option.slice(KIND.length) : option)
 
-// Tags narrow — every one picked has to be on the page. Text widens: it looks at
-// the slug, the title, and the prompt and brief the page came out of, so you can
-// find a page by something you remember asking for rather than by its name.
-function matches(example: Example, tags: string[], query: string) {
+const COUNTS: Record<string, number> = {}
+const KINDS: string[] = []
+const TAGS: string[] = []
+for (const example of examples) {
+  const manifest = example.manifest
+  const options = [...(manifest?.kind ? [KIND + manifest.kind] : []), ...(manifest?.tags ?? [])]
+  for (const option of options) {
+    if (!(option in COUNTS)) (option.startsWith(KIND) ? KINDS : TAGS).push(option)
+    COUNTS[option] = (COUNTS[option] ?? 0) + 1
+  }
+}
+KINDS.sort()
+TAGS.sort()
+
+// Base UI takes grouped items as `{ items }` objects and hides a group its
+// filtering empties, so a label only shows up while it has something under it,
+// and a vocabulary nothing uses yet drops out entirely.
+const GROUPS = [
+  { value: 'kind', items: KINDS },
+  { value: 'technique', items: TAGS },
+].filter((group) => group.items.length > 0)
+
+// Text widens where the options narrow: it looks at the slug, the title, and the
+// prompt and brief the page came out of, so you can find a page by something you
+// remember asking for rather than by its name.
+function matches(example: Example, kinds: string[], tags: string[], query: string) {
   const own = example.manifest?.tags ?? []
+  const kind = example.manifest?.kind
+  if (kinds.length && !(kind && kinds.includes(kind))) return false
   if (!tags.every((tag) => own.includes(tag))) return false
   if (!query) return true
   const needle = query.toLowerCase()
@@ -105,23 +136,24 @@ function matches(example: Example, tags: string[], query: string) {
     example.manifest?.title,
     example.manifest?.prompt,
     example.manifest?.brief,
+    kind,
     ...own,
   ]
   return haystack.some((field) => field?.toLowerCase().includes(needle))
 }
 
-// One control for both halves of the filter: the chips are the tags, and
-// whatever is left in the input is the free-text query. Typing narrows the tag
-// list *and* the sidebar at the same time — pick a tag and it becomes a chip,
-// don't and the text keeps filtering on its own.
+// One control for both halves of the filter: the chips are the kinds and tags,
+// and whatever is left in the input is the free-text query. Typing narrows the
+// option list *and* the sidebar at the same time — pick an option and it becomes
+// a chip, don't and the text keeps filtering on its own.
 function Filter({
-  tags,
-  onTagsChange,
+  options,
+  onOptionsChange,
   query,
   onQueryChange,
 }: {
-  tags: string[]
-  onTagsChange: (tags: string[]) => void
+  options: string[]
+  onOptionsChange: (options: string[]) => void
   query: string
   onQueryChange: (query: string) => void
 }) {
@@ -130,11 +162,14 @@ function Filter({
   return (
     <Combobox
       multiple
-      items={TAGS}
-      value={tags}
+      items={GROUPS}
+      // The `kind:` prefix keeps the two vocabularies from colliding on a shared
+      // word; it's plumbing, so it stays out of the chips and out of the match.
+      itemToStringLabel={label}
+      value={options}
       // Both handlers get a second `eventDetails` argument from Base UI. Drop it
       // here: it would land on the state setters as their options bag.
-      onValueChange={(next: string[]) => onTagsChange(next)}
+      onValueChange={(next: string[]) => onOptionsChange(next)}
       inputValue={query}
       onInputValueChange={(next: string) => onQueryChange(next)}
     >
@@ -142,12 +177,12 @@ function Filter({
         <ComboboxValue>
           {(selected: string[]) => (
             <>
-              {selected.map((tag) => (
-                <ComboboxChip key={tag}>{tag}</ComboboxChip>
+              {selected.map((option) => (
+                <ComboboxChip key={option}>{label(option)}</ComboboxChip>
               ))}
               <ComboboxChipsInput
                 aria-label="Filter the examples"
-                placeholder={selected.length ? '' : 'tag, name or prompt…'}
+                placeholder={selected.length ? '' : 'kind, tag, name or prompt…'}
               />
             </>
           )}
@@ -155,17 +190,70 @@ function Filter({
       </ComboboxChips>
       {/* Anchored on the chips rather than the input, which moves as they wrap. */}
       <ComboboxContent anchor={anchor}>
-        <ComboboxEmpty>no tag says that — filtering on the text alone</ComboboxEmpty>
+        <ComboboxEmpty>nothing in the list says that — filtering on the text alone</ComboboxEmpty>
         <ComboboxList>
-          {(tag: string) => (
-            <ComboboxItem key={tag} value={tag}>
-              {tag}
-              <span className="text-muted-foreground ml-auto tabular-nums">{TAG_COUNTS[tag]}</span>
-            </ComboboxItem>
+          {(group: { value: string; items: string[] }) => (
+            <ComboboxGroup key={group.value} items={group.items}>
+              <ComboboxLabel>{group.value}</ComboboxLabel>
+              <ComboboxCollection>
+                {(option: string) => (
+                  <ComboboxItem key={option} value={option}>
+                    {label(option)}
+                    <span className="text-muted-foreground ml-auto tabular-nums">
+                      {COUNTS[option]}
+                    </span>
+                  </ComboboxItem>
+                )}
+              </ComboboxCollection>
+            </ComboboxGroup>
           )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>
+  )
+}
+
+// The techniques of one example, laid over the bottom of its thumbnail: a row
+// that scrolls sideways rather than wrapping, so a page with nine tags is the
+// same height in the list as a page with two. The row is masked at both ends,
+// which is what says "there is more that way" without a chevron — and it is
+// also what makes a half-scrolled row look deliberate rather than clipped.
+// Each badge is the filter too: picking one picks it in the combobox above,
+// picking it again lets it go.
+function Tags({
+  tags,
+  picked,
+  onPick,
+}: {
+  tags: string[] | undefined
+  picked: string[]
+  onPick: (tag: string) => void
+}) {
+  if (!tags?.length) return null
+  return (
+    <ScrollArea
+      // Base UI's Root sets `position: relative` inline, which a plain
+      // `absolute` class can't outrank — hence the `!`.
+      className="pointer-events-none absolute! inset-x-0 bottom-0 [mask-image:linear-gradient(to_right,transparent,black_1.25rem,black_calc(100%-1.25rem),transparent)]"
+      // The thumbnail underneath is the link; only the badges take the pointer
+      // back, so dragging across the row still selects the example.
+    >
+      <div className="pointer-events-auto flex w-max gap-1 px-2 pb-2">
+        {tags.map((tag) => (
+          <Badge
+            key={tag}
+            variant={picked.includes(tag) ? 'default' : 'secondary'}
+            className="cursor-pointer bg-background/70 backdrop-blur-sm data-[variant=default]:bg-primary/90"
+            render={
+              <button type="button" onClick={() => onPick(tag)}>
+                {tag}
+              </button>
+            }
+          />
+        ))}
+      </div>
+      <ScrollBar orientation="horizontal" className="pointer-events-auto" />
+    </ScrollArea>
   )
 }
 
@@ -280,7 +368,7 @@ function HowTo() {
             nativeButton={false}
             render={
               <a
-                href={`${REPO_URL}#contributing-a-landing-page-with-claude-code`}
+                href={`${REPO_URL}#contributing-with-claude-code`}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -314,39 +402,57 @@ export default function App() {
   // replaceState so typing doesn't fill the back button (which is for walking
   // the examples), and the empty value drops the key rather than leaving
   // `?q=` behind. Both are its defaults.
+  //
+  // One key per vocabulary — ?kind=landing&tags=water — so a URL reads as what it
+  // means rather than as the combobox's internal prefixing. The two are joined
+  // back into one list on the way in, and split apart on the way out.
+  const [kinds, setKinds] = useQueryState('kind', parseAsArrayOf(parseAsString).withDefault([]))
   const [tags, setTags] = useQueryState('tags', parseAsArrayOf(parseAsString).withDefault([]))
   const [query, setQuery] = useQueryState('q', parseAsString.withDefault(''))
+  const options = useMemo(() => [...kinds.map((kind) => KIND + kind), ...tags], [kinds, tags])
+  const setOptions = (next: string[]) => {
+    setKinds(next.filter((option) => option.startsWith(KIND)).map(label))
+    setTags(next.filter((option) => !option.startsWith(KIND)))
+  }
   const shown = useMemo(
-    () => examples.filter((example) => matches(example, tags, query)),
-    [tags, query]
+    () => examples.filter((example) => matches(example, kinds, tags, query)),
+    [kinds, tags, query]
   )
-  const filtering = tags.length > 0 || query !== ''
+  const filtering = options.length > 0 || query !== ''
 
   return (
     <SidebarProvider className="h-svh">
       <Sidebar>
         <SidebarHeader className="gap-3 p-4">
           <div className="grid gap-1">
-            <h1 className="text-sm font-semibold tracking-tight">examples</h1>
+            {/* The title *is* the count: "18 examples" until the filter bites,
+                "3 of 18" after. One number, at the top, where the eye already
+                goes — rather than a heading saying what the tab already says
+                and a tally repeating itself further down. */}
+            <h1 className="text-sm font-semibold tracking-tight">
+              {filtering ? `${shown.length} of ${examples.length}` : `${examples.length} examples`}
+            </h1>
             <p className="text-muted-foreground text-xs">
-              react-three-fiber landing pages, each generated in one prompt.
+              react-three-fiber scenes, each generated in one prompt.
             </p>
           </div>
-          <Filter tags={tags} onTagsChange={setTags} query={query} onQueryChange={setQuery} />
+          <Filter
+            options={options}
+            onOptionsChange={setOptions}
+            query={query}
+            onQueryChange={setQuery}
+          />
         </SidebarHeader>
         <SidebarSeparator />
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {filtering ? `${shown.length} of ${examples.length}` : `${examples.length} examples`}
-            </SidebarGroupLabel>
             <SidebarGroupContent>
               {filtering && shown.length === 0 && (
                 <p className="text-muted-foreground px-2 py-6 text-center text-xs">nothing matches</p>
               )}
-              <SidebarMenu className="gap-2">
+              <SidebarMenu className="gap-4">
                 {shown.map((example) => (
-                  <SidebarMenuItem key={example.name}>
+                  <SidebarMenuItem key={example.name} className="relative">
                     {/* Text-free: the shot is the label, so it goes edge to edge
                         and the active one is marked with a ring, not a bg. */}
                     <SidebarMenuButton
@@ -357,6 +463,15 @@ export default function App() {
                     >
                       <Thumb {...example} />
                     </SidebarMenuButton>
+                    <Tags
+                      tags={example.manifest?.tags}
+                      picked={tags}
+                      onPick={(tag) =>
+                        setTags(
+                          tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]
+                        )
+                      }
+                    />
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

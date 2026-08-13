@@ -3,6 +3,7 @@
   "prompt": "in 5 separate folders, in parallel (one agent each):\n\n    impress-me with a landing-page mixing 3+ techniques from pmndrs:examples skill\n\nat the end build and open each one in a browser tab",
   "brief": "Fictional brand \"MONOLITH\" — a brutalist concrete-and-chrome architecture studio. Monochrome, raw concrete, polished chrome blob, harsh studio light, swiss typography with one acid accent. Mix 3+ distinct techniques from real pmndrs demos.",
   "date": "2026-08-12",
+  "kind": "landing",
   "tags": [
     "bloom",
     "instancing",

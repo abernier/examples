@@ -4,6 +4,7 @@
   "brief": "Build an IMPRESSIVE 3D landing page for a modular synthesizer shop / eurorack boutique, technical-brutalist studio vibe — instancing, MeshReflectorMaterial, catmull-rom tube geometry (patch cables), studio lighting, Text3D, scroll rig, bloom/DOF. Left unfinished by the agent; the scene was there, the page around it was not, and it was completed in-repo.",
   "date": "2026-08-12",
   "model": "opus",
+  "kind": "landing",
   "tags": [
     "bloom",
     "instancing",

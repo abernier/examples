@@ -4,6 +4,7 @@
   "brief": "Usecase picked by the agent: arcade emporium.",
   "date": "2026-08-12",
   "model": "haiku",
+  "kind": "landing",
   "tags": [
     "physics"
   ]

@@ -53,7 +53,7 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
 
 - No Jekyll here (that only happens with the legacy "deploy from a branch"
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
-- The landing page at https://abernier.github.io/examples/ is generated at deploy
+- The gallery at https://abernier.github.io/examples/ is generated at deploy
   time, in three steps:
   1. `.github/preview.mjs` screenshots every `dist/<name>/` (Playwright, in the
      `mcr.microsoft.com/playwright` container — browsers already baked in) into
@@ -66,15 +66,17 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
      corner of the iframe it shows the prompt the page was built from, read from
      `dist/<name>/manifest.json` (written in `src/<name>/`, carried over by
      `sync.sh` — see `.claude/skills/new-example/SKILL.md`). The same manifest
-     feeds the filter in the sidebar header: its `tags` are the techniques on
-     screen (`water`, `caustics`, `physics`, …) and picking them narrows the
-     list, while anything typed but not picked searches the slug, the title and
-     the prompt and brief. No tag list is hardcoded — the vocabulary is whatever
-     the manifests use. The filter itself lives in the query string (nuqs), next
-     to the hash the selection is in, so
-     https://abernier.github.io/examples/?tags=water,caustics&q=surf#lp-surf is a
-     link to a shortlist as much as to a page. It's written with `replaceState`,
-     so the back button stays about the examples.
+     feeds the filter in the sidebar header — one combobox, two grouped
+     vocabularies, neither of them hardcoded: `kind` is what the page is
+     (`landing`, `game`, … one per example, so picking two widens to their union),
+     `tags` are the techniques on screen (`water`, `caustics`, `physics`, …,
+     several per example, so picking two narrows to the pages carrying both).
+     Anything typed but not picked searches the slug, the title and the prompt
+     and brief instead. The filter lives in the query string (nuqs), next to the
+     hash the selection is in, so
+     https://abernier.github.io/examples/?kind=landing&tags=water,caustics&q=surf#lp-surf
+     is a link to a shortlist as much as to a page. It's written with
+     `replaceState`, so the back button stays about the examples.
   3. `.github/og.mjs` writes the social card tags into every `index.html` in
      `dist/` — `og:image` is that project's thumbnail, `og:title`/`og:description`
      are read from the page's own `<title>`/`<meta name=description>`. The gallery
@@ -101,7 +103,7 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
   output directory didn't match, nothing at all. CI builds the whole `dist/` and
   hands it over prebuilt instead; `vercel deploy --prebuilt` is a CLI deploy and
   is unaffected by that switch.
-- To work on the landing page, from the repo root:
+- To work on the gallery, from the repo root:
   ```sh
   npm run dev       # src/home/ in dev — it serves the real dist/, so the
                     # iframes and thumbnails resolve
