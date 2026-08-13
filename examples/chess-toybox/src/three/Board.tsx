@@ -65,10 +65,28 @@ export function Board({
   selected: Square | null
   onPick: (square: Square) => void
 }) {
+  // Printed on the tray floor, a hair above it. A hair is all the clearance
+  // there is, and at a grazing angle — which is most of this camera's range —
+  // that hair projects to less than the depth buffer can resolve, so the tray
+  // comes up through the checks in bands. `polygonOffset` fixes the case the
+  // gap can't: it biases by the slope of the surface, so the steeper the
+  // fragment reads in depth, the harder the checks are pulled forward.
   const [light, dark] = useMemo(
     () => [
-      new THREE.MeshStandardMaterial({ color: LIGHT, roughness: 0.45 }),
-      new THREE.MeshStandardMaterial({ color: DARK, roughness: 0.45 }),
+      new THREE.MeshStandardMaterial({
+        color: LIGHT,
+        roughness: 0.45,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: DARK,
+        roughness: 0.45,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      }),
     ],
     []
   )
@@ -122,11 +140,12 @@ export function Board({
         <meshStandardMaterial color={TRAY} roughness={0.35} />
       </RoundedBox>
       {/* The checks sit *on* the tray floor, not level with it: coplanar and the
-          z-fight eats the board. */}
+          z-fight eats the board. The gap does the work head-on, the
+          `polygonOffset` on the materials does it at a grazing angle. */}
       {TILES.map((tile) => (
         <mesh
           key={tile.square}
-          position={[tile.position[0], 0.301, tile.position[1]]}
+          position={[tile.position[0], 0.302, tile.position[1]]}
           rotation={[-Math.PI / 2, 0, 0]}
           material={tile.light ? light : dark}
           receiveShadow
@@ -136,11 +155,20 @@ export function Board({
       ))}
       {selected && (
         <mesh
-          position={[squarePosition(selected)[0], 0.306, squarePosition(selected)[1]]}
+          position={[squarePosition(selected)[0], 0.308, squarePosition(selected)[1]]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
           <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial color="#ffe14d" transparent opacity={0.5} />
+          {/* One rung further forward than the check it lies on, for the same
+              reason the check is one rung ahead of the tray. */}
+          <meshBasicMaterial
+            color="#ffe14d"
+            transparent
+            opacity={0.5}
+            polygonOffset
+            polygonOffsetFactor={-4}
+            polygonOffsetUnits={-4}
+          />
         </mesh>
       )}
       {[...targets].map(([square, capture]) => (
