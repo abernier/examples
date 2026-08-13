@@ -112,6 +112,28 @@ const LIMBS = [
   { from: (s: string) => `${s}_wing1`, to: (s: string) => `${s}_wing2`, keep: 0.05 },
 ]
 
+/**
+ * Where the bulk of a mesh is, on the floor plan — the median x and z of its
+ * vertices, in the space it is drawn in. `getVertexPosition` is what makes it
+ * work on these: it puts a skinned vertex through its bones, so this reads the
+ * pose the toy is actually standing in and not the T it was modelled in.
+ */
+function median(mesh: THREE.Mesh) {
+  const position = mesh.geometry.attributes.position
+  const vertex = new THREE.Vector3()
+  const xs = new Float64Array(position.count)
+  const zs = new Float64Array(position.count)
+  for (let i = 0; i < position.count; i++) {
+    mesh.getVertexPosition(i, vertex).applyMatrix4(mesh.matrixWorld)
+    xs[i] = vertex.x
+    zs[i] = vertex.z
+  }
+  xs.sort()
+  zs.sort()
+  const half = position.count >> 1
+  return new THREE.Vector2(xs[half], zs[half])
+}
+
 function poseArmsDown(root: THREE.Object3D) {
   const named = new Map<string, THREE.Object3D>()
   root.traverse((node) => {
@@ -220,14 +242,21 @@ function useToy(type: PieceSymbol, color: Color) {
     // Whichever of the two rules is tighter wins.
     const scale = Math.min(HEIGHT[type] / size.y, 1.5 / Math.max(size.x, size.z))
 
-    // Feet on the plinth, centred over it.
+    // Feet on the plinth, and the *body* over the middle of it — which is not
+    // the middle of the bounding box. Bo Peep carries a crook and Rémy drags a
+    // tail: a few dozen vertices, sticking a long way out to one side, and they
+    // shove the box's centre far enough that the piece visibly sits off its
+    // square. The median vertex doesn't care — half the toy is on either side of
+    // it however long the tail is — so that is what gets centred, and the tail
+    // trails off the square the way a tail should.
+    const middle = median(body)
     const group = new THREE.Group()
     group.add(root)
     root.scale.setScalar(scale)
     root.position.set(
-      -((bounds.min.x + bounds.max.x) / 2) * scale,
+      -middle.x * scale,
       -bounds.min.y * scale,
-      -((bounds.min.z + bounds.max.z) / 2) * scale
+      -middle.y * scale
     )
     prepared.set(key, group)
     return group
