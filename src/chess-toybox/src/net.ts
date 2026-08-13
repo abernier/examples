@@ -102,6 +102,15 @@ export type Table = {
 }
 
 /**
+ * Whether we're the gallery's preview rather than the page itself. A preview is
+ * a shop window: it sits in an iframe, so the address bar above it is the
+ * gallery's and the room we'd write into ours would be one nobody can read or
+ * pass on. So it doesn't take a table at all — it plays the kitchen, and the
+ * two-player half of this starts when you open the page for real.
+ */
+export const embedded = window.top !== window.self
+
+/**
  * Every page is a table, from the moment it opens — there's nothing to click to
  * make one. The address bar already holds the invitation, and handing it to
  * someone is the one deliberate act the whole thing needs.
@@ -112,7 +121,9 @@ export type Table = {
  * reloads their own page the URL is the one they shared — and reading the colour
  * out of it would sit two blacks at the same table.
  */
-function table(): { room: string; color: Color } {
+function table(): { room: string | null; color: Color } {
+  if (embedded) return { room: null, color: 'w' }
+
   const found = new URLSearchParams(location.hash.slice(1)).get('r')
   if (found) return { room: found, color: sessionStorage.getItem(`toybox:${found}`) === 'w' ? 'w' : 'b' }
 
@@ -138,6 +149,7 @@ export function useTable(handlers: Handlers): Table {
   const wire = useRef<Wire | null>(null)
 
   useEffect(() => {
+    if (!room) return
     const seated = sit(room)
     wire.current = seated
     seated.seat = { on, friend: setFriend }

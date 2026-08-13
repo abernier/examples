@@ -21,7 +21,7 @@ import {
   type Ply,
   type Toy,
 } from "./game";
-import { useTable } from "./net";
+import { embedded, useTable } from "./net";
 import { Board } from "./three/Board";
 import { Piece } from "./three/Piece";
 import { Room } from "./three/Room";
@@ -244,8 +244,10 @@ export default function App() {
           all — there's nothing to set up, so there's nothing to put a panel
           around. It goes once the first toy has moved: by then you know. */}
       <p className={`hint${game.chess.history().length ? " done" : ""}`}>
-        Cliquez une pièce, puis une case · glissez pour tourner autour ·
-        envoyez l’adresse de la page à un ami pour qu’il prenne la cuisine
+        Cliquez une pièce, puis une case · glissez pour tourner autour ·{" "}
+        {embedded
+          ? "ouvrez la page pour jouer à deux"
+          : "envoyez l’adresse de la page à un ami pour qu’il prenne la cuisine"}
       </p>
     </>
   );
