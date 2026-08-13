@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { ExternalLink, Terminal, X } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import examples from 'virtual:examples'
 
 import { Button } from '@/components/ui/button'
@@ -70,9 +70,26 @@ function Thumb({ name, shot }: { name: string; shot: boolean }) {
 
 type Manifest = NonNullable<(typeof examples)[number]['manifest']>
 
+// Claude's asterisk — ten tapered arms, pointed at the centre, rounded outside.
+// Drawn here rather than fetched: the gallery ships as static files.
+function ClaudeStar(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}>
+      {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((angle) => (
+        <path
+          key={angle}
+          d="M12 12 L10.45 6.05 A1.55 1.55 0 0 1 13.55 6.05 Z"
+          transform={`rotate(${angle} 12 12)`}
+        />
+      ))}
+    </svg>
+  )
+}
+
 // The whole point of the gallery: every page came out of one prompt. It sits
 // over the iframe rather than in the chrome, so the answer is next to the thing
-// it produced — and it folds back into a pill, because it covers a corner of it.
+// it produced. Closed by default — the page is what you came for; the avatar is
+// the only control, and it opens and closes.
 function Prompt({ manifest, open, onOpenChange }: {
   manifest: Manifest
   open: boolean
@@ -80,53 +97,38 @@ function Prompt({ manifest, open, onOpenChange }: {
 }) {
   const meta = [manifest.date, manifest.model].filter(Boolean).join(' · ')
 
-  if (!open) {
-    return (
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => onOpenChange(true)}
-        className="pointer-events-auto shadow-lg backdrop-blur-md"
-      >
-        <Terminal />
-        prompt
-      </Button>
-    )
-  }
-
   return (
     // Only the bubble carries a surface — the header and footer sit straight on
     // the page, the way a message does anywhere else.
     <Message align="end" className="pointer-events-auto">
       <MessageAvatar className="bg-background/80 size-8 shadow-lg ring-1 ring-border backdrop-blur-md">
-        <Terminal className="size-4" />
-      </MessageAvatar>
-      <MessageContent>
-        <MessageHeader className="gap-1">
-          built from
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Hide the prompt"
-            onClick={() => onOpenChange(false)}
-            className="-my-1 ml-1 size-5"
-          >
-            <X className="size-3" />
-          </Button>
-        </MessageHeader>
-        <div
-          data-slot="message-body"
-          className="bg-background/85 max-h-[40vh] overflow-y-auto rounded-lg p-3 shadow-lg ring-1 ring-border backdrop-blur-md"
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? 'Hide the prompt' : 'Show the prompt this was built from'}
+          onClick={() => onOpenChange(!open)}
+          className="grid size-full cursor-pointer place-items-center opacity-80 transition-opacity hover:opacity-100"
         >
-          <pre className="font-mono text-xs leading-5 whitespace-pre-wrap">{manifest.prompt}</pre>
-          {manifest.brief && (
-            <p className="text-muted-foreground mt-2.5 border-t pt-2.5 text-xs leading-5">
-              {manifest.brief}
-            </p>
-          )}
-        </div>
-        {meta && <MessageFooter>{meta}</MessageFooter>}
-      </MessageContent>
+          <ClaudeStar className="size-4" />
+        </button>
+      </MessageAvatar>
+      {open && (
+        <MessageContent>
+          <MessageHeader>built from</MessageHeader>
+          <div
+            data-slot="message-body"
+            className="bg-background/85 max-h-[40vh] overflow-y-auto rounded-lg p-3 shadow-lg ring-1 ring-border backdrop-blur-md"
+          >
+            <pre className="font-mono text-xs leading-5 whitespace-pre-wrap">{manifest.prompt}</pre>
+            {manifest.brief && (
+              <p className="text-muted-foreground mt-2.5 border-t pt-2.5 text-xs leading-5">
+                {manifest.brief}
+              </p>
+            )}
+          </div>
+          {meta && <MessageFooter>{meta}</MessageFooter>}
+        </MessageContent>
+      )}
     </Message>
   )
 }
@@ -199,8 +201,8 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   useEffect(() => setLoading(true), [current?.name])
 
-  // Sticky across examples on purpose: folding it away once means it stays away.
-  const [promptOpen, setPromptOpen] = useState(true)
+  // Closed until asked for, and sticky across examples either way.
+  const [promptOpen, setPromptOpen] = useState(false)
 
   return (
     <SidebarProvider className="h-svh">
