@@ -1,0 +1,21 @@
+{
+  "title": "Toybox Chess",
+  "prompt": "d'ailleurs cree un new-example dun jeu d'echec façon toy-story : la 2e cat sera game",
+  "brief": "A playable chess set of Toy Story toys on a bedroom floor — Woody, Jessie, Buzz, Buttercup and Trixie against green army men, on a plastic tray. Click-to-move with chess.js; the toys are pushed across the board rather than lifted. The kitchen plays black until you send someone the page's address, at which point they take that chair — two browsers, peer to peer, no server behind it. The gallery's first non-landing entry: it carries the second kind, `game`.",
+  "date": "2026-08-13",
+  "model": "opus",
+  "kind": "game",
+  "tags": [
+    "canvas-texture",
+    "gltf",
+    "interaction",
+    "multiplayer",
+    "shadows",
+    "skinning"
+  ],
+  "demos": [
+    "baking-soft-shadows",
+    "basic-example",
+    "mount-transitions"
+  ]
+}

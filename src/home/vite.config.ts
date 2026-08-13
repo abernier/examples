@@ -31,17 +31,24 @@ function readManifest(name: string) {
   }
 }
 
+// Newest first — the sidebar is a feed, and what was built last is what you
+// came back to see. `date` comes off the manifest, so an example without one
+// falls to the bottom rather than to the middle of the list; the slug breaks
+// the ties inside a day, which is most of them here.
 function listExamples() {
   if (!existsSync(DIST)) return []
   return readdirSync(DIST, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'))
-    .map((entry) => entry.name)
-    .sort()
-    .map((name) => ({
-      name,
-      shot: existsSync(path.join(PREVIEWS, `${name}.jpg`)),
-      manifest: readManifest(name),
+    .map((entry) => ({
+      name: entry.name,
+      shot: existsSync(path.join(PREVIEWS, `${entry.name}.jpg`)),
+      manifest: readManifest(entry.name),
     }))
+    .sort(
+      (a, b) =>
+        (b.manifest?.date ?? '').localeCompare(a.manifest?.date ?? '') ||
+        a.name.localeCompare(b.name)
+    )
 }
 
 function gallery(): Plugin {

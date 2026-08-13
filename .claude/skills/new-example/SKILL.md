@@ -74,6 +74,7 @@ front of you; reconstructing it later means digging through transcripts.
   "brief": "What that prompt resolved to here.",
   "date": "2026-08-12",
   "model": "opus",
+  "kind": "landing",
   "tags": ["bloom", "instancing", "particles", "postprocessing", "transmission"],
   "demos": ["glass-flower", "instanced-particles-effects"]
 }
@@ -92,6 +93,12 @@ prompt already *is* the instruction and reads that way without you.
 `date` is the day it was built, `model` the family that built it (`opus`,
 `sonnet`, `haiku`), `demos` the pmndrs slugs it borrows — same list as the
 README.
+
+`kind` is what the thing *is*, one word, and every example here so far is a
+`landing`. It's the other half of the filter — its own group in the combobox,
+above the techniques — so it only earns a new value when the thing genuinely
+isn't a landing page any more (a `toy`, a `game`, a `viewer`). One kind per
+example; if you hesitate between two, it's a tag you want, not a kind.
 
 `tags` is required, and it is what the sidebar filter offers: the techniques
 actually on screen, lowercase, sorted, kebab-case. Name what you rendered, not

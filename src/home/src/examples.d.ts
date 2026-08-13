@@ -9,6 +9,8 @@ declare module 'virtual:examples' {
     brief?: string
     date?: string
     model?: string
+    /** What the page is — `landing`. One per example; the filter groups by it. */
+    kind?: string
     /** Techniques on screen — what the sidebar filter offers. */
     tags?: string[]
     /** pmndrs demos it borrows from. */

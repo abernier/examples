@@ -4,6 +4,7 @@
   "brief": "Usecase picked by the agent: smokehouse.",
   "date": "2026-08-12",
   "model": "haiku",
+  "kind": "landing",
   "tags": [
     "fire",
     "particles",

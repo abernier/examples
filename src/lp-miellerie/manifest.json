@@ -3,6 +3,7 @@
   "prompt": "/new-example",
   "brief": "Skill new-example with no argument, which means picking a usecase nobody has done yet. Resolved to: an artisanal honey house (lp-miellerie), porting four pmndrs demos — inter-epoxy-resin for the honey, volumetric-spotlight for the beams, instances for the comb, tying-canvas-to-scroll-offset for the rig.",
   "date": "2026-08-12",
+  "kind": "landing",
   "tags": [
     "bloom",
     "instancing",
