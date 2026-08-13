@@ -12,6 +12,7 @@ import {
   ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
+  ComboboxValue,
   useComboboxAnchor,
 } from '@/components/ui/combobox'
 import {
@@ -135,23 +136,26 @@ function Filter({
       onInputValueChange={onQueryChange}
     >
       <ComboboxChips ref={anchor}>
-        {tags.map((tag) => (
-          <ComboboxChip key={tag}>{tag}</ComboboxChip>
-        ))}
-        <ComboboxChipsInput
-          className="h-6 text-xs"
-          aria-label="Filter the examples"
-          placeholder={tags.length ? '' : 'tag, name or prompt…'}
-        />
+        <ComboboxValue>
+          {(selected: string[]) => (
+            <>
+              {selected.map((tag) => (
+                <ComboboxChip key={tag}>{tag}</ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                aria-label="Filter the examples"
+                placeholder={selected.length ? '' : 'tag, name or prompt…'}
+              />
+            </>
+          )}
+        </ComboboxValue>
       </ComboboxChips>
       {/* Anchored on the chips rather than the input, which moves as they wrap. */}
       <ComboboxContent anchor={anchor}>
-        <ComboboxEmpty className="px-2 py-2 text-xs">
-          no tag says that — filtering on the text alone
-        </ComboboxEmpty>
+        <ComboboxEmpty>no tag says that — filtering on the text alone</ComboboxEmpty>
         <ComboboxList>
           {(tag: string) => (
-            <ComboboxItem key={tag} value={tag} className="text-xs">
+            <ComboboxItem key={tag} value={tag}>
               {tag}
               <span className="text-muted-foreground ml-auto tabular-nums">{TAG_COUNTS[tag]}</span>
             </ComboboxItem>
