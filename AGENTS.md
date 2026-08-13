@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 The gallery app is `src/home/`. Everything else under `src/` is an example page —
 see `.claude/skills/new-example/SKILL.md` for how those get built, and `README.md`
