@@ -9,6 +9,8 @@ declare module 'virtual:examples' {
     brief?: string
     date?: string
     model?: string
+    /** Techniques on screen — what the sidebar filter offers. */
+    tags?: string[]
     /** pmndrs demos it borrows from. */
     demos?: string[]
   }
