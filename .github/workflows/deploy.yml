@@ -30,10 +30,37 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: pnpm/action-setup@v4
+
+      - id: store
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.store.outputs.dir }}
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - run: pnpm install --frozen-lockfile
+
+      # Every example that turbo can prove nothing changed in comes straight
+      # out of here instead of being rebuilt — which also keeps its bytes
+      # identical, so the preview cache below still hits.
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ github.sha }}
+          restore-keys: turbo-
+
+      # dist/ is not in the repo: this is what makes it. turbo builds every
+      # example, ./sync.sh collects them.
+      - run: pnpm build
+
       # Previews survive between runs, so only projects whose files changed get
       # re-screenshot (preview.mjs compares hashes in _previews/manifest.json).
-      # The key never hits exactly when dist/ changed — restore-keys gets us the
-      # latest one anyway, which is the point.
+      # Keyed after the build, on the dist/ that just came out of it — a run
+      # that rebuilt nothing byte-for-byte hits exactly; restore-keys gets us
+      # the latest one otherwise, which is the point.
       - uses: actions/cache@v4
         with:
           path: dist/_previews
@@ -42,14 +69,15 @@ jobs:
 
       # Screenshots each dist/<name>/ into dist/_previews/. preview.mjs serves
       # dist/ under /examples/ itself, so absolute base paths resolve exactly
-      # like they will on Pages.
+      # like they will on Pages. Globally installed: the repo's own node_modules
+      # is pnpm's, and preview.mjs falls back to the global root to require it.
       - run: |
-          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          npm install -g --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
           node .github/preview.mjs
 
-      # Builds the gallery (src/home/, Vite) from those previews into
+      # Builds the gallery (apps/website/, Vite) from those previews into
       # dist/index.html + dist/_home/. After the screenshots, on purpose.
-      - run: ./build-home.sh
+      - run: ./build-website.sh
 
       # Social cards: og:image per page, pointing at the thumbs above. Last,
       # because it rewrites every index.html in dist/ — the gallery's included.

@@ -1,0 +1,13 @@
+{
+  "name": "@examples/dev",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "What the repo's own tooling shares: what counts as an example, and which port it runs on in dev.",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "default": "./index.mjs"
+    }
+  }
+}

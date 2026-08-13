@@ -41,9 +41,32 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Read-only here: `cache` would write a branch-scoped entry that main can
-      # never see, so restore from whatever the last deploy left and re-shoot
-      # only what this PR changed.
+      - uses: pnpm/action-setup@v4
+
+      - id: store
+        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      # Read-only, like the previews below: a PR's cache entry is branch-scoped
+      # and main would never see it.
+      - uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.store.outputs.dir }}
+          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: .turbo
+          key: turbo-${{ github.sha }}
+          restore-keys: turbo-
+
+      # dist/ is not in the repo — this is what makes it.
+      - run: pnpm build
+
+      # Restore from whatever the last deploy left and re-shoot only what this
+      # PR changed.
       - uses: actions/cache/restore@v4
         with:
           path: dist/_previews
@@ -51,10 +74,10 @@ jobs:
           restore-keys: previews-
 
       - run: |
-          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          npm install -g --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
           node .github/preview.mjs
 
-      - run: ./build-home.sh
+      - run: ./build-website.sh
 
       - run: node .github/og.mjs
 

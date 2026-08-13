@@ -1,0 +1,21 @@
+packages:
+  - apps/*
+  - examples/*
+  - packages/*
+
+# esbuild fetches its platform binary from a postinstall script; without this
+# pnpm 10 skips it and vite dies loading its own config.
+onlyBuiltDependencies:
+  - esbuild
+
+overrides:
+  # Every example pins its own three — they're artifacts, frozen at the version
+  # they were built against — and that is fine for the runtime copies. The
+  # *types* are not: a package deep enough in the graph resolves `three` by
+  # walking up to pnpm's internal hoist dir (`.pnpm/node_modules/`), which holds
+  # one arbitrary copy of @types/three, and which one depends on install order.
+  # landing-luxe-watches came from pmndrs pinned to r165, so a from-scratch
+  # install could hoist 0.165 and typecheck every other example against it —
+  # `DataTexture is not assignable to Texture`, with nothing wrong in the code.
+  # One version of the types across the repo, and the ambiguity is gone.
+  "@types/three": 0.185.4

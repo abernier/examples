@@ -1,16 +1,16 @@
-# Sources are versioned (src/<name>/), their builds are not — dist/<name>/ is the
-# synced copy that ships.
+# Only the sources are versioned. dist/ is the site, and it is a build output:
+# `pnpm build` (turbo, then ./sync.sh) reassembles it from examples/*/dist/, CI
+# does the same on every deploy. Nothing in it is committed.
+/dist/
+/apps/*/dist/
+/examples/*/dist/
+
 node_modules/
 package-lock.json
-/src/*/dist/
+.turbo/
 
 .DS_Store
 
-# Rebuilt on every deploy — previews by .github/preview.mjs, the landing page
-# by ./build-home.sh (src/home/)
-dist/_previews/
-dist/index.html
-dist/_home/
 .env*
 
 # Scratch dir the Vercel CLI builds to stage dist/ as a prebuilt output

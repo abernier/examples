@@ -1,12 +1,21 @@
 {
   "name": "examples",
   "private": true,
-  "description": "Dumb static host — dist/ is the site. These scripts drive the landing page (src/home/).",
+  "description": "A turborepo of small static sites. Each examples/<name>/ builds itself; dist/ is assembled from those builds at deploy time and is not versioned.",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "npm --prefix src/home run dev",
-    "build": "./build-home.sh",
-    "preview": "npm --prefix src/home run preview",
+    "dev": "pnpm --filter website dev",
+    "build": "turbo run build $(node bin/examples.mjs --filter) && ./sync.sh",
+    "build:website": "./build-website.sh",
+    "preview": "pnpm --filter website preview",
     "shots": "./preview.sh",
     "og": "node .github/og.mjs"
+  },
+  "devDependencies": {
+    "@examples/dev": "workspace:*",
+    "turbo": "^2.10.9"
   }
 }
