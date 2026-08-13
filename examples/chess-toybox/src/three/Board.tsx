@@ -4,22 +4,25 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import type { Square } from 'chess.js'
 
-import { FILES, RANKS, pointer, squareAt, squarePosition } from '../game'
+import { pointer, squareAt, squarePosition } from '../game'
+import { checks } from '../textures'
 
 const LIGHT = '#f3e3c0'
 const DARK = '#c8402f'
 const TRAY = '#2f6cb5'
 
-const TILES = RANKS.split('').flatMap((rank) =>
-  FILES.split('').map((file) => {
-    const square = `${file}${rank}` as Square
-    return {
-      square,
-      position: squarePosition(square),
-      light: (FILES.indexOf(file) + RANKS.indexOf(rank)) % 2 === 1,
-    }
-  })
-)
+// How the tray is stacked, bottom to top. The board is a slab with real
+// thickness sitting *in* the tray rather than a print floating above its floor:
+// nothing here shares a plane with anything else, which is the only fix for a
+// z-fight that holds whatever precision the depth buffer happens to have. The
+// phones that were still showing bands through the board at full zoom-out
+// resolve about two centimetres at that distance; the board now stands eight
+// clear of the lip around it.
+const TRAY_TOP = 0.222
+/** The playing surface — where a toy's feet are, and every other height here. */
+const SURFACE = 0.302
+/** Deep enough that the bottom of it is buried in the tray, not resting on it. */
+const SLAB = 0.092
 
 /**
  * A disc on an empty square, a ring around an occupied one: where you can go.
@@ -65,31 +68,14 @@ export function Board({
   selected: Square | null
   onPick: (square: Square) => void
 }) {
-  // Printed on the tray floor, a hair above it. A hair is all the clearance
-  // there is, and at a grazing angle — which is most of this camera's range —
-  // that hair projects to less than the depth buffer can resolve, so the tray
-  // comes up through the checks in bands. `polygonOffset` fixes the case the
-  // gap can't: it biases by the slope of the surface, so the steeper the
-  // fragment reads in depth, the harder the checks are pulled forward.
-  const [light, dark] = useMemo(
-    () => [
-      new THREE.MeshStandardMaterial({
-        color: LIGHT,
-        roughness: 0.45,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        polygonOffsetUnits: -2,
-      }),
-      new THREE.MeshStandardMaterial({
-        color: DARK,
-        roughness: 0.45,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        polygonOffsetUnits: -2,
-      }),
-    ],
-    []
-  )
+  // The slab, faced six ways: the checks printed on top, and the moulded blue
+  // everywhere else — the edge of it is what you see standing proud of the lip.
+  const faces = useMemo(() => {
+    const tray = new THREE.MeshStandardMaterial({ color: TRAY, roughness: 0.35 })
+    const top = new THREE.MeshStandardMaterial({ map: checks(LIGHT, DARK), roughness: 0.45 })
+    // `BoxGeometry` groups run +x, −x, +y, −y, +z, −z.
+    return [tray, tray, top, tray, tray, tray]
+  }, [])
 
   // One sheet of glass over the whole board, and the only thing on this page
   // that answers the pointer. Everything you can point at is a square — which is
@@ -130,37 +116,29 @@ export function Board({
       {/* The tray, and the lip moulded around it. Bevelled corners because
           nothing that came out of a mould has a sharp one. */}
       <RoundedBox
-        args={[9.6, 0.3, 9.6]}
-        radius={0.12}
+        args={[9.6, TRAY_TOP, 9.6]}
+        radius={0.09}
         smoothness={4}
-        position={[0, 0.15, 0]}
+        position={[0, TRAY_TOP / 2, 0]}
         castShadow
         receiveShadow
       >
         <meshStandardMaterial color={TRAY} roughness={0.35} />
       </RoundedBox>
-      {/* The checks sit *on* the tray floor, not level with it: coplanar and the
-          z-fight eats the board. The gap does the work head-on, the
-          `polygonOffset` on the materials does it at a grazing angle. */}
-      {TILES.map((tile) => (
-        <mesh
-          key={tile.square}
-          position={[tile.position[0], 0.302, tile.position[1]]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          material={tile.light ? light : dark}
-          receiveShadow
-        >
-          <planeGeometry args={[1, 1]} />
-        </mesh>
-      ))}
+      {/* The board, dropped into the tray. One mesh where there were
+          sixty-four, and the checks are on its top face rather than over it. */}
+      <mesh position={[0, SURFACE - SLAB / 2, 0]} material={faces} receiveShadow castShadow>
+        <boxGeometry args={[8, SLAB, 8]} />
+      </mesh>
       {selected && (
         <mesh
-          position={[squarePosition(selected)[0], 0.308, squarePosition(selected)[1]]}
+          position={[squarePosition(selected)[0], SURFACE + 0.014, squarePosition(selected)[1]]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
           <planeGeometry args={[1, 1]} />
-          {/* One rung further forward than the check it lies on, for the same
-              reason the check is one rung ahead of the tray. */}
+          {/* The one thing left that has to lie on a surface rather than beside
+              it. It gets both belts: enough clearance for a coarse depth buffer
+              to resolve on its own, and the offset a decal wants anyway. */}
           <meshBasicMaterial
             color="#ffe14d"
             transparent

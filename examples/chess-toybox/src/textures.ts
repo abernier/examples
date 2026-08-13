@@ -51,6 +51,31 @@ export const wood = () =>
     }
   })
 
+/**
+ * The sixty-four checks, as one image printed on the top of the board.
+ *
+ * Sixty-four meshes laid over the tray is the arrangement that z-fights: two
+ * flat surfaces a hair apart, and on a phone — where the depth buffer is often
+ * half the width a desktop gives you — a hair is under what the hardware can
+ * tell apart. Printed instead, there is one surface where there were two.
+ *
+ * Painted big rather than eight pixels wide and filtered up, so the edges
+ * between the checks are antialiased by the mipmaps like anything else, instead
+ * of stepping.
+ *
+ * `a1` is dark, the way it is on any board. Canvas rows run down and ranks run
+ * up, so row `j` is rank `7 - j` — which flips the parity, and is why this reads
+ * as even-is-light where `squarePosition` has odd-is-light.
+ */
+export const checks = (light: string, dark: string) =>
+  canvas(512, (ctx) => {
+    for (let j = 0; j < 8; j++)
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = (i + j) % 2 === 0 ? light : dark
+        ctx.fillRect(i * 64, j * 64, 64, 64)
+      }
+  })
+
 /** The wallpaper every kid's bedroom in a Pixar film has: flat clouds, flat sky. */
 export const wallpaper = () =>
   canvas(512, (ctx) => {
