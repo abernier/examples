@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ContactShadows } from '@react-three/drei'
+import { ContactShadows, Environment, Lightformer } from '@react-three/drei'
 
 import { wallpaper, wood } from '../textures'
 
@@ -61,12 +61,19 @@ function Props() {
  * every bedroom in a Pixar film has. Both are painted into canvases at startup —
  * see `textures.ts` — so the only thing this page fetches is the toys.
  *
- * The light lands twice: a shadow-mapped directional for the long cast shadow
- * across the floor, and ContactShadows for the dark line right under each toy
- * that a shadow map at this scale can't hold. drei's SoftShadows would be the
- * third way and isn't here: its PCSS patch calls `unpackRGBAToDepth`, which
- * three dropped after the version that demo pins, and every material in the
- * scene fails to compile.
+ * The room is lit the way a room is: an `Environment` built out of Lightformers
+ * — a bright window on one side, the ceiling above, the floor bouncing back —
+ * so every toy is lit from all around and no side of one is ever black. It's
+ * painted in the browser like the two textures, so the page still only fetches
+ * the toys. The directional light is left over that only to cast; it sits high
+ * and off the window side rather than behind either chair, because the camera
+ * sits at both ends of the board and a key light behind it turns a whole army
+ * into a silhouette.
+ *
+ * ContactShadows adds the dark line right under each toy that a shadow map at
+ * this scale can't hold. drei's SoftShadows would be the third way and isn't
+ * here: its PCSS patch calls `unpackRGBAToDepth`, which three dropped after the
+ * version that demo pins, and every material in the scene fails to compile.
  */
 export function Room() {
   const [boards, clouds] = useMemo(() => {
@@ -79,22 +86,36 @@ export function Room() {
 
   return (
     <>
-      <color attach="background" args={['#a8d8f5']} />
-      <hemisphereLight intensity={0.55} color="#fff3d8" groundColor="#8a5a2c" />
+      <color attach="background" args={['#dfe9f2']} />
+      <Environment resolution={256}>
+        {/* The window, and the two panes of it: the one thing in the room
+            bright enough to read as a source. */}
+        <Lightformer form="rect" intensity={4} color="#e8f3ff" position={[9, 4.5, 1.6]} scale={[5, 7, 1]} />
+        <Lightformer form="rect" intensity={4} color="#e8f3ff" position={[9, 4.5, -3.4]} scale={[5, 7, 1]} />
+        {/* The ceiling, holding the daylight the window threw at it. */}
+        <Lightformer form="rect" intensity={1.6} color="#fff4e2" position={[0, 11, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[22, 22, 1]} />
+        {/* The floorboards, warm, bouncing it back up under every chin. */}
+        <Lightformer form="rect" intensity={0.9} color="#f2c48e" position={[0, -3, 2]} rotation={[-Math.PI / 2, 0, 0]} scale={[22, 22, 1]} />
+        {/* And the three walls, so nothing turns to a cut-out when the camera
+            swings round to the far end of the board. */}
+        <Lightformer form="rect" intensity={0.8} color="#eef2f6" position={[-10, 4, 0]} scale={[10, 8, 1]} />
+        <Lightformer form="rect" intensity={0.7} color="#eef2f6" position={[0, 4, 12]} scale={[14, 8, 1]} />
+        <Lightformer form="rect" intensity={0.7} color="#eef2f6" position={[0, 4, -12]} scale={[14, 8, 1]} />
+      </Environment>
+      {/* Everything above lights; this one only casts. Off the window side and
+          high, so it never stands behind whichever chair you're sitting in. */}
       <directionalLight
         castShadow
-        position={[-7, 12, 9]}
-        intensity={3}
+        position={[8, 14, 3]}
+        intensity={1.6}
         color="#fff0d0"
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0006}
       >
         <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 0.5, 45]} />
       </directionalLight>
-      {/* A cold bounce off the window side, so the floor isn't a silhouette. */}
-      <pointLight position={[9, 5, -6]} intensity={22} decay={2} color="#bcd8f2" />
 
-      <ContactShadows position={[0, 0.012, 0]} scale={34} blur={2.4} far={4} opacity={0.45} />
+      <ContactShadows position={[0, 0.012, 0]} scale={34} blur={2.4} far={4} opacity={0.32} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[80, 80]} />
         <meshStandardMaterial map={boards} roughness={0.6} />
