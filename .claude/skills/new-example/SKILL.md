@@ -61,6 +61,34 @@ Delete the Vite boilerplate (`src/App.css`, `src/assets/`, the counter demo,
 `public/vite.svg`) and replace `README.md` with 3–5 lines: what the page is, and
 which pmndrs demos it borrows from.
 
+## 2b. Manifest
+
+`src/<slug>/manifest.json` — where the page came from. The gallery shows
+`prompt` over the iframe, bottom-right, so a visitor sees what produced the page
+they are looking at. Write it now, while the brief is still in front of you;
+reconstructing it afterwards means digging through transcripts.
+
+```json
+{
+  "title": "Cardia",
+  "prompt": "/new-example ❤️",
+  "brief": "One line on what that prompt turned into here.",
+  "date": "2026-08-12",
+  "model": "opus",
+  "demos": ["glass-flower", "instanced-particles-effects"]
+}
+```
+
+Only `prompt` is required, and it is **verbatim** — the argument the human typed,
+not a tidied-up version of it, not your restatement of the task. `brief` is for
+when the prompt does not narrow down to this one page: a batch prompt built five
+sites, so each manifest says which one it got. `date` is the day it was built,
+`model` the family that built it (`opus`, `sonnet`, `haiku`), `demos` the pmndrs
+demo slugs it borrows from — same list as the README.
+
+`sync.sh` copies the manifest into `dist/<slug>/`, and `src/home/vite.config.ts`
+reads it from there at build time.
+
 ## 3. Design from real demos — not from memory
 
 Invoke `pmndrs:examples` and read `examples://index` before writing any scene
@@ -143,11 +171,14 @@ rather than trusting how it feels.
 From the repo root:
 
 ```sh
-./sync.sh <slug>       # src/<slug>/dist/ -> dist/<slug>/
+./sync.sh <slug>       # src/<slug>/dist/ + manifest.json -> dist/<slug>/
 ./preview.sh           # optional, needs Docker: regenerates the gallery locally
 git add src/<slug> dist/<slug>
 git commit -m "Add <slug> landing page"
 ```
+
+`sync.sh` warns if `manifest.json` is missing — the page still deploys, it just
+shows up promptless in the gallery.
 
 `src/<slug>/dist/` and `node_modules/` are gitignored — commit the source and the
 synced copy only. Pushing to `main` deploys.
@@ -159,3 +190,7 @@ message, each with its own slug and its own brief — and give each a distinct
 direction (palette, technique, mood) so the batch does not converge on five blue
 particle fields. Each agent runs steps 1–5 in its own `src/<slug>/`; run step 6
 yourself once they all report back, so the commit stays coherent.
+
+Every manifest in a batch carries the *same* `prompt` — the one prompt the human
+typed, once — and its own `brief`, the direction you handed that agent. Pass both
+strings down in the agent's instructions so it does not have to guess either.

@@ -1,0 +1,6 @@
+{
+  "title": "Côte Sauvage Surf",
+  "prompt": "in 5 separate folders, in parallel (one agent each):\n\n    impress-me with a landing-page for a %usecase% using the pmndrs:examples skill\n\nreplace `%usecase%` with anything, e.g. \"jewelry-boutique\" | \"arcade-game shop\" | \"anything_you_find_relevant\"\n\nat the end build and open each one in a browser tab",
+  "brief": "Build an \"impress-me\" 3D landing page for a Biarritz surf school (\"Côte Sauvage Surf\") — water / ocean shader / MeshReflectorMaterial / scroll-rig / caustics / godrays.",
+  "date": "2026-08-12"
+}

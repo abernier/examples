@@ -1,8 +1,15 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Terminal, X } from 'lucide-react'
 import examples from 'virtual:examples'
 
 import { Button } from '@/components/ui/button'
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+  MessageFooter,
+  MessageHeader,
+} from '@/components/ui/message'
 import {
   Dialog,
   DialogContent,
@@ -58,6 +65,72 @@ function Thumb({ name, shot }: { name: string; shot: boolean }) {
     />
   ) : (
     <span className={className} />
+  )
+}
+
+type Manifest = NonNullable<(typeof examples)[number]['manifest']>
+
+// The whole point of the gallery: every page came out of one prompt. It sits
+// over the iframe rather than in the chrome, so the answer is next to the thing
+// it produced — and it folds back into a pill, because it covers a corner of it.
+function Prompt({ manifest, open, onOpenChange }: {
+  manifest: Manifest
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const meta = [manifest.date, manifest.model].filter(Boolean).join(' · ')
+
+  if (!open) {
+    return (
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onOpenChange(true)}
+        className="pointer-events-auto shadow-lg backdrop-blur-md"
+      >
+        <Terminal />
+        prompt
+      </Button>
+    )
+  }
+
+  return (
+    // The whole message rides on one translucent panel: the header and footer
+    // are muted text, and the page underneath is any colour at all.
+    <Message
+      align="end"
+      className="bg-background/85 pointer-events-auto rounded-xl p-3 shadow-lg ring-1 ring-border backdrop-blur-md"
+    >
+      <MessageAvatar className="size-8">
+        <Terminal className="size-4" />
+      </MessageAvatar>
+      <MessageContent>
+        <MessageHeader className="gap-1 px-1">
+          built from
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Hide the prompt"
+            onClick={() => onOpenChange(false)}
+            className="-my-1 ml-1 size-5"
+          >
+            <X className="size-3" />
+          </Button>
+        </MessageHeader>
+        <div
+          data-slot="message-body"
+          className="bg-muted max-h-[40vh] overflow-y-auto rounded-lg p-3"
+        >
+          <pre className="font-mono text-xs leading-5 whitespace-pre-wrap">{manifest.prompt}</pre>
+          {manifest.brief && (
+            <p className="text-muted-foreground mt-2.5 border-t pt-2.5 text-xs leading-5">
+              {manifest.brief}
+            </p>
+          )}
+        </div>
+        {meta && <MessageFooter className="px-1">{meta}</MessageFooter>}
+      </MessageContent>
+    </Message>
   )
 }
 
@@ -125,6 +198,9 @@ export default function App() {
   // cover it until `load` fires.
   const [loading, setLoading] = useState(true)
   useEffect(() => setLoading(true), [current?.name])
+
+  // Sticky across examples on purpose: folding it away once means it stays away.
+  const [promptOpen, setPromptOpen] = useState(true)
 
   return (
     <SidebarProvider className="h-svh">
@@ -201,6 +277,15 @@ export default function App() {
                   <span className="text-muted-foreground animate-pulse text-sm">
                     loading {current.name}…
                   </span>
+                </div>
+              )}
+              {current.manifest?.prompt && (
+                <div className="pointer-events-none absolute right-4 bottom-4 flex max-w-[min(28rem,calc(100%-2rem))] justify-end">
+                  <Prompt
+                    manifest={current.manifest}
+                    open={promptOpen}
+                    onOpenChange={setPromptOpen}
+                  />
                 </div>
               )}
             </>
