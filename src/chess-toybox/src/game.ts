@@ -23,6 +23,9 @@ export function squarePosition(square: Square): [number, number] {
   return [FILES.indexOf(square[0]) - 3.5, 3.5 - RANKS.indexOf(square[1])]
 }
 
+/** A move stripped to what the other side of a table needs: two squares. */
+export type Ply = { from: Square; to: Square }
+
 export function newGame() {
   const chess = new Chess()
   const toys: Toy[] = []
@@ -63,6 +66,32 @@ export function applyMove(toys: Toy[], move: Move, taken: number): Toy[] {
     }
     return toy
   })
+}
+
+/** Its place on the carpet: how many of its own side are already sat out. */
+export function seats(toys: Toy[], mover: Color) {
+  return toys.filter((toy) => toy.takenAt !== null && toy.color !== mover).length
+}
+
+export function history(chess: Chess): Ply[] {
+  return chess.history({ verbose: true }).map(({ from, to }) => ({ from, to }))
+}
+
+/**
+ * A whole game rebuilt from its move list — what someone who just sat down at
+ * the table gets sent, and what a restart is (the empty list).
+ *
+ * It walks the toys through every move rather than reading the final position,
+ * for the reason the toys have ids at all: the two sides have to agree on which
+ * toy is where, not merely on which piece is.
+ */
+export function replay(plies: Ply[]) {
+  const game = newGame()
+  for (const { from, to } of plies) {
+    const move = game.chess.move({ from, to, promotion: 'q' })
+    game.toys = applyMove(game.toys, move, seats(game.toys, move.color))
+  }
+  return game
 }
 
 const VALUE: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }

@@ -27,90 +27,43 @@ canvas {
   touch-action: none;
 }
 
-/* A slip of paper left on the desk, not a UI panel. */
-.hud {
+/* A slip of paper left on the desk, not a UI panel — and only out when there's
+   something on it. */
+.says {
   position: fixed;
   top: max(1rem, env(safe-area-inset-top));
-  left: max(1rem, env(safe-area-inset-left));
-  width: min(16rem, calc(100vw - 2rem));
-  padding: 0.9rem 1rem 1rem;
+  left: 50%;
+  margin: 0;
+  padding: 0.6rem 1.1rem;
+  max-width: min(20rem, calc(100vw - 2rem));
   background: #fffdf6;
-  color: #2f4356;
+  color: #2f6cb5;
   box-shadow:
     0 1px 0 rgb(255 255 255 / 60%) inset,
     0 14px 26px -14px rgb(24 52 78 / 45%);
-  transform: rotate(-1deg);
+  transform: translateX(-50%) rotate(-1deg);
   border-radius: 0.9rem;
-}
-
-.hud h1 {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #2f6cb5;
-}
-
-.hud .cast {
-  margin: 0 0 0.6rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgb(47 108 181 / 22%);
-  font-size: 0.72rem;
-  font-style: italic;
-  color: #7d8fa0;
-}
-
-.hud p {
-  margin: 0 0 0.55rem;
-  font-size: 0.85rem;
-  line-height: 1.35;
-}
-
-.hud .loud {
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #2f6cb5;
+  text-align: center;
+  text-wrap: balance;
 }
 
-/* The fallen, named — the set beside the board is the real tally, this reads it
-   out. */
-.tally {
-  min-height: 1.4em;
-  font-size: 0.72rem;
-  font-style: italic;
-  line-height: 1.5;
-  color: #7d8fa0;
-}
-
-.tally span::after {
-  content: ', ';
-}
-
-.tally span:last-child::after {
-  content: '.';
-}
-
-.tally .tan {
-  color: #b08b46;
-}
-
-.tally .green {
-  color: #4e7c3f;
-}
-
-.hud button {
-  width: 100%;
-  padding: 0.45rem 0.6rem;
+.says button {
+  display: block;
+  margin: 0.55rem auto 0;
+  padding: 0.4rem 0.7rem;
   border: 1px solid rgb(47 108 181 / 35%);
   background: transparent;
   color: #2f6cb5;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   cursor: pointer;
 }
 
-.hud button:hover {
+.says button:hover {
   background: rgb(47 108 181 / 8%);
 }
 
@@ -121,11 +74,20 @@ canvas {
   transform: translateX(-50%);
   margin: 0;
   padding: 0.35rem 0.9rem;
+  max-width: min(44rem, calc(100vw - 2rem));
   background: rgb(255 253 246 / 82%);
   color: #2f4356;
   font-size: 0.72rem;
   font-style: italic;
-  white-space: nowrap;
+  text-align: center;
+  text-wrap: balance;
+  transition: opacity 0.8s ease 0.4s;
+}
+
+/* Read once, and then it's in the way. */
+.hint.done {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @media (max-width: 34rem) {

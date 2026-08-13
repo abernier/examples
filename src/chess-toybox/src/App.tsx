@@ -8,43 +8,37 @@ import {
 } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { CameraControls } from "@react-three/drei";
-import type { Color, PieceSymbol, Square } from "chess.js";
+import type { Square } from "chess.js";
 
-import { applyMove, newGame, reply, verdict, type Toy } from "./game";
+import {
+  applyMove,
+  history,
+  newGame,
+  replay,
+  reply,
+  seats,
+  verdict,
+  type Ply,
+  type Toy,
+} from "./game";
+import { useTable } from "./net";
 import { Board } from "./three/Board";
 import { Piece } from "./three/Piece";
 import { Room } from "./three/Room";
 
 const OVER = ["won", "lost", "stalemate", "draw"];
 
+// Everything the board says by itself — whose turn it is, who has fallen, what a
+// piece can reach — it says better than a panel would, so the only words left
+// are the ones a board can't say out loud.
 const SAYS: Record<string, string> = {
-  playing: "À vous de jouer",
   check: "Échec !",
-  thinking: "En face, on réfléchit…",
-  won: "Échec et mat — vous gagnez",
-  lost: "Échec et mat — la cuisine a gagné",
+  joining: "On vous installe à la table…",
+  mateYou: "Échec et mat — vous gagnez",
+  mateFriend: "Échec et mat — votre ami gagne",
+  mateKitchen: "Échec et mat — la cuisine a gagné",
   stalemate: "Pat",
   draw: "Partie nulle",
-};
-
-// Who each piece is, for the tally beside the board — two casts, so two lists.
-const NAMES: Record<Color, Record<PieceSymbol, string>> = {
-  w: {
-    p: "un petit soldat",
-    n: "Buttercup",
-    b: "Buzz",
-    r: "Trixie",
-    q: "Bo Peep",
-    k: "Woody",
-  },
-  b: {
-    p: "Rémy",
-    n: "Émile",
-    b: "Anton Ego",
-    r: "Mabel",
-    q: "Colette",
-    k: "Linguini",
-  },
 };
 
 // A perspective camera's fov is vertical, so a portrait window crops the board
@@ -61,7 +55,13 @@ const NAMES: Record<Color, Record<PieceSymbol, string>> = {
 // height has changed — and every one of those re-ran this effect and put the
 // camera back where it started. From the chair that reads as the view resetting
 // under your hand, twice a drag.
-function Framing({ controls }: { controls: CameraControls | null }) {
+function Framing({
+  controls,
+  side,
+}: {
+  controls: CameraControls | null;
+  side: number;
+}) {
   const size = useThree((state) => state.size);
   const pull = Math.max(1, 1.6 / (size.width / size.height));
   const framed = useRef(false);
@@ -69,9 +69,9 @@ function Framing({ controls }: { controls: CameraControls | null }) {
     if (!controls) return;
     // Instant the first time, eased after: a reframe on a real resize is worth
     // seeing happen.
-    controls.setLookAt(0, 0.6 + 7 * pull, 12.5 * pull, 0, 0.6, 0, framed.current);
+    controls.setLookAt(0, 0.6 + 7 * pull, side * 12.5 * pull, 0, 0.6, 0, framed.current);
     framed.current = true;
-  }, [controls, pull]);
+  }, [controls, pull, side]);
   return null;
 }
 
@@ -82,38 +82,70 @@ export default function App() {
   const [status, setStatus] = useState("playing");
   const [controls, setControls] = useState<CameraControls | null>(null);
 
-  const over = OVER.includes(status);
-  const yours = game.chess.turn() === "w" && !over;
-
   const play = useCallback(
     (from: Square, to: Square) => {
       const move = game.chess.move({ from, to, promotion: "q" });
-      setToys((current) =>
-        applyMove(
-          current,
-          move,
-          // Its place on the carpet: how many of its own side are already there.
-          current.filter(
-            (toy) => toy.takenAt !== null && toy.color !== move.color,
-          ).length,
-        ),
-      );
+      setToys((current) => applyMove(current, move, seats(current, move.color)));
       setSelected(null);
       setStatus(verdict(game.chess));
     },
     [game],
   );
 
+  // A game handed over whole: someone joining mid-way, or a restart, which is
+  // the same message with nothing in it.
+  const set = useCallback((plies: Ply[]) => {
+    const next = replay(plies);
+    setGame(next);
+    setToys(next.toys);
+    setSelected(null);
+    setStatus(verdict(next.chess));
+  }, []);
+
+  const table = useTable({
+    // A move that doesn't fit the board we're on means the two games have come
+    // apart — better a move that does nothing than a page that goes white.
+    move: ({ from, to }) => {
+      try {
+        play(from, to);
+      } catch {
+        /* out of step; the next sync will sort it out */
+      }
+    },
+    board: ({ plies, reset }) => {
+      if (reset || plies.length > game.chess.history().length) set(plies);
+    },
+    history: () => history(game.chess),
+  });
+
+  // The kitchen keeps black warm. A friend who opens the link takes that chair,
+  // whenever they get here — mid-game is fine, they inherit whatever the rats
+  // have been up to.
+  const mine = table.color;
+  const over = OVER.includes(status);
+  // Nothing to do but wait: you came by someone's link and they aren't there.
+  const waiting = mine === "b" && !table.friend;
+  const yours = game.chess.turn() === mine && !over && !waiting;
+
+  const move = (from: Square, to: Square) => {
+    play(from, to);
+    table.move({ from, to });
+  };
+
   // The answer comes after a beat — instantly is unreadable, and something
   // taking its time is half of what makes it feel like someone is sitting there.
+  // It stops the moment a friend arrives, and picks black back up if they go —
+  // but only at the white chair. Black is the guest's own side, and a side that
+  // starts playing itself the moment the other page closes is a poltergeist.
   useEffect(() => {
+    if (mine !== "w" || table.friend) return;
     if (game.chess.turn() !== "b" || OVER.includes(status)) return;
     const timer = setTimeout(() => {
-      const move = reply(game.chess);
-      if (move) play(move.from, move.to);
+      const answer = reply(game.chess);
+      if (answer) play(answer.from, answer.to);
     }, 750);
     return () => clearTimeout(timer);
-  }, [game, status, toys, play]);
+  }, [game, status, toys, play, mine, table.friend]);
 
   const targets = useMemo(() => {
     const map = new Map<Square, boolean>();
@@ -128,25 +160,35 @@ export default function App() {
   const actionable = useCallback(
     (square: Square) =>
       targets.has(square) ||
-      (yours && toys.some((t) => t.square === square && t.color === "w" && t.takenAt === null)),
-    [targets, yours, toys],
+      (yours && toys.some((t) => t.square === square && t.color === mine && t.takenAt === null)),
+    [targets, yours, toys, mine],
   );
 
   const pick = (square: Square) => {
-    if (targets.has(square)) return play(selected!, square);
+    if (targets.has(square)) return move(selected!, square);
     const toy = toys.find((t) => t.square === square && t.takenAt === null);
-    setSelected(yours && toy?.color === "w" ? square : null);
+    setSelected(yours && toy?.color === mine ? square : null);
   };
 
   const restart = () => {
-    const next = newGame();
-    setGame(next);
-    setToys(next.toys);
-    setSelected(null);
-    setStatus("playing");
+    set([]);
+    table.board({ plies: [], reset: true });
   };
 
-  const taken = toys.filter((toy) => toy.takenAt !== null);
+  // Checkmate is read out of the position, so it's always white's news; whose
+  // news it is depends on which chair you're in.
+  const mated = status === "won" || status === "lost";
+  const line = waiting
+    ? "joining"
+    : mated
+      ? (status === "won") === (mine === "w")
+        ? "mateYou"
+        : table.friend
+          ? "mateFriend"
+          : "mateKitchen"
+      : over || status === "check"
+        ? status
+        : null;
 
   return (
     <>
@@ -158,7 +200,7 @@ export default function App() {
         dpr={[1, 2]}
         camera={{ position: [0, 7.6, 12.5], fov: 34 }}
       >
-        <Framing controls={controls} />
+        <Framing controls={controls} side={mine === "w" ? 1 : -1} />
         <Room />
         <Board targets={targets} selected={selected} actionable={actionable} onPick={pick} />
         {/* The toys arrive from five files; the board is playable before they
@@ -188,30 +230,22 @@ export default function App() {
             import away when the staging is settled. */}
       </Canvas>
 
-      <div className="hud">
-        <h1>Toybox</h1>
-        <p className="cast">le coffre à jouets contre la cuisine</p>
-        <p className={status === "check" || over ? "loud" : ""}>
-          {SAYS[yours ? status : over ? status : "thinking"]}
+      {line && (
+        <p className="says">
+          {SAYS[line]}
+          {over && (
+            <button type="button" onClick={restart}>
+              Tout ranger et recommencer
+            </button>
+          )}
         </p>
-        <p className="tally">
-          {taken.length
-            ? taken.map((toy) => (
-                <span
-                  key={toy.id}
-                  className={toy.color === "w" ? "tan" : "green"}
-                >
-                  {NAMES[toy.color][toy.type]}
-                </span>
-              ))
-            : "Personne n’est encore tombé"}
-        </p>
-        <button type="button" onClick={restart}>
-          Tout ranger et recommencer
-        </button>
-      </div>
-      <p className="hint">
-        Cliquez une pièce, puis une case · glissez pour tourner autour
+      )}
+      {/* How to play, and the only place the two-player part is mentioned at
+          all — there's nothing to set up, so there's nothing to put a panel
+          around. It goes once the first toy has moved: by then you know. */}
+      <p className={`hint${game.chess.history().length ? " done" : ""}`}>
+        Cliquez une pièce, puis une case · glissez pour tourner autour ·
+        envoyez l’adresse de la page à un ami pour qu’il prenne la cuisine
       </p>
     </>
   );
