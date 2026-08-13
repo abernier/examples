@@ -123,6 +123,15 @@ export default function App() {
     return map;
   }, [game, selected, toys]);
 
+  // What the cursor should say about a square, which is all the board needs
+  // from the game: would clicking here do anything at all?
+  const actionable = useCallback(
+    (square: Square) =>
+      targets.has(square) ||
+      (yours && toys.some((t) => t.square === square && t.color === "w" && t.takenAt === null)),
+    [targets, yours, toys],
+  );
+
   const pick = (square: Square) => {
     if (targets.has(square)) return play(selected!, square);
     const toy = toys.find((t) => t.square === square && t.takenAt === null);
@@ -151,7 +160,7 @@ export default function App() {
       >
         <Framing controls={controls} />
         <Room />
-        <Board targets={targets} selected={selected} onPick={pick} />
+        <Board targets={targets} selected={selected} actionable={actionable} onPick={pick} />
         {/* The toys arrive from five files; the board is playable before they
             land, which is the point of keeping the boundary this tight. */}
         <Suspense fallback={null}>
@@ -160,7 +169,6 @@ export default function App() {
               key={toy.id}
               toy={toy}
               selected={toy.square === selected && toy.takenAt === null}
-              onSelect={() => pick(toy.square)}
             />
           ))}
         </Suspense>

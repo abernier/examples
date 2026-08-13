@@ -1,12 +1,12 @@
-import { forwardRef, useEffect, useMemo, useRef } from 'react'
+import { forwardRef, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useFrame, type ThreeElements, type ThreeEvent } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { easing } from 'maath'
 import type { Color, PieceSymbol } from 'chess.js'
 
-import { squarePosition, type Toy } from '../game'
+import { pointer, squarePosition, type Toy } from '../game'
 
 // Two Pixar films across a board from each other, cast by what each piece does.
 //
@@ -322,38 +322,6 @@ const Plinth = forwardRef<THREE.MeshStandardMaterial, { color: Color }>(function
   )
 })
 
-/**
- * What the pointer actually hits: the piece's square, a flat slab lying on the
- * board. Invisible by `material.visible` and not `object.visible`, since the
- * second one would take it out of the raycast as well.
- *
- * Flat is the whole point. A box tall enough to cover a piece stands between the
- * pointer and every square behind it — on a board seen from this low, that is
- * most of the board, and the click meant for an empty square kept landing on
- * whoever was standing in front of it. Lying down, a piece can't occlude
- * anything but the sliver of floor immediately behind its own square.
- */
-function Hitbox(props: ThreeElements['mesh']) {
-  return (
-    <mesh position={[0, 0.07, 0]} {...props}>
-      <boxGeometry args={[0.96, 0.14, 0.96]} />
-      <meshBasicMaterial visible={false} />
-    </mesh>
-  )
-}
-
-// The cursor is one thing and there are thirty-two pieces, so it is counted
-// rather than set. R3F does not promise that the `pointerout` of the piece you
-// are leaving arrives before the `pointerover` of the one you are entering, and
-// on the wrong order a plain assignment leaves you with an arrow while you are
-// very much over something clickable.
-let hovering = 0
-
-function cursor(delta: number) {
-  hovering = Math.max(0, hovering + delta)
-  document.body.style.cursor = hovering ? 'pointer' : 'auto'
-}
-
 // Where a toy goes once it's out: sat on the floor beside the board, on its own
 // side of it, so who is winning is readable off the carpet.
 function takenPosition(toy: Toy): [number, number, number] {
@@ -365,45 +333,15 @@ function takenPosition(toy: Toy): [number, number, number] {
 const target = new THREE.Vector3()
 const rotation = new THREE.Euler()
 
-export function Piece({
-  toy,
-  selected,
-  onSelect,
-}: {
-  toy: Toy
-  selected: boolean
-  onSelect: () => void
-}) {
+export function Piece({ toy, selected }: { toy: Toy; selected: boolean }) {
   const ref = useRef<THREE.Group>(null!)
   const taken = toy.takenAt !== null
   const [x0, z0] = squarePosition(toy.square)
-  // Hover is deliberately *not* React state. A pointer crossing the board sets
-  // it dozens of times a second, and every one of those would re-render this
-  // component — and, through the page-wide cursor flag it used to raise, all
-  // thirty-two of them plus the camera controls. So it is a ref the frame loop
-  // reads, the cursor is written straight to the DOM, and the light on the base
-  // is eased on the material itself. Nothing here goes through a render.
-  const hovered = useRef(false)
+  // Nothing here listens for the pointer. The board knows which square it is
+  // over — one ray against one plane — and a piece only has to ask whether that
+  // square is its own, in the frame loop, where asking is free. No hover state,
+  // no handler, no render.
   const glow = useRef<THREE.MeshStandardMaterial>(null!)
-
-  const enter = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation()
-    if (hovered.current) return
-    hovered.current = true
-    cursor(1)
-  }
-  const leave = () => {
-    if (!hovered.current) return
-    hovered.current = false
-    cursor(-1)
-  }
-
-  // The hitbox goes away under the pointer more often than you'd think — a piece
-  // is taken while you are standing over it. R3F fires no `pointerout` for a
-  // hitbox that simply stopped existing, so without this the cursor stays a hand
-  // and the base stays lit for a piece that isn't there any more.
-  const live = !taken
-  useEffect(() => (live ? leave : undefined), [live])
 
   useFrame((_, delta) => {
     if (taken) {
@@ -444,7 +382,7 @@ export function Piece({
     }
     easing.damp3(ref.current.position, target, taken ? 0.35 : 0.2, delta)
     easing.dampE(ref.current.rotation, rotation, 0.28, delta)
-    const lit = hovered.current && live
+    const lit = !taken && pointer.square === toy.square
     easing.damp3(ref.current.scale, selected ? 1.12 : lit ? 1.06 : 1, 0.18, delta)
     easing.damp(glow.current, 'emissiveIntensity', selected ? 0.7 : lit ? 0.4 : 0, 0.12, delta)
   })
@@ -453,13 +391,6 @@ export function Piece({
     // Set out on the board, not dropped onto it from the ceiling: the game
     // starts with the toys already where they belong.
     <group ref={ref} position={[x0, 0.3, z0]}>
-      {live && (
-        <Hitbox
-          onClick={(event) => (event.stopPropagation(), onSelect())}
-          onPointerOver={enter}
-          onPointerOut={leave}
-        />
-      )}
       <Plinth ref={glow} color={toy.color} />
       <group position={[0, PLINTH, 0]} rotation={[0, toy.color === 'w' ? Math.PI : 0, 0]}>
         <Modelled type={toy.type} color={toy.color} />

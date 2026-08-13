@@ -96,3 +96,21 @@ export function verdict(chess: Chess) {
   if (chess.inCheck()) return 'check'
   return 'playing'
 }
+
+/**
+ * Which square the pointer is over, and nothing else about it.
+ *
+ * A plain object rather than React state on purpose: a pointer crossing the
+ * board writes this dozens of times a second, and every write would otherwise
+ * re-render thirty-two pieces and the camera controls. The board writes it, the
+ * pieces read it in their frame loop, and no render ever happens.
+ */
+export const pointer: { square: Square | null } = { square: null }
+
+/** The square a point on the board plane falls in — the inverse of the above. */
+export function squareAt(x: number, z: number): Square | null {
+  const file = Math.round(x + 3.5)
+  const rank = Math.round(3.5 - z)
+  if (file < 0 || file > 7 || rank < 0 || rank > 7) return null
+  return `${FILES[file]}${RANKS[rank]}` as Square
+}

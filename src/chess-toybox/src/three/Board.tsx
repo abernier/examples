@@ -1,10 +1,10 @@
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import type { Square } from 'chess.js'
 
-import { FILES, RANKS, squarePosition } from '../game'
+import { FILES, RANKS, pointer, squareAt, squarePosition } from '../game'
 
 const LIGHT = '#f3e3c0'
 const DARK = '#c8402f'
@@ -23,18 +23,10 @@ const TILES = RANKS.split('').flatMap((rank) =>
 
 /**
  * A disc on an empty square, a ring around an occupied one: where you can go.
- * Clickable in its own right — it floats above the board, so it is reachable
- * from angles where the square underneath it is hidden behind a toy.
+ * It answers no pointer events — the board underneath it does that, and one
+ * thing answering for a square is enough.
  */
-function Marker({
-  position,
-  capture,
-  onPick,
-}: {
-  position: [number, number]
-  capture: boolean
-  onPick: () => void
-}) {
+function Marker({ position, capture }: { position: [number, number]; capture: boolean }) {
   const ref = useRef<THREE.Mesh>(null!)
   useFrame((state) => {
     const t = state.clock.elapsedTime * 3 + position[0]
@@ -46,7 +38,6 @@ function Marker({
       ref={ref}
       position={[position[0], 0.32, position[1]]}
       rotation={[-Math.PI / 2, 0, 0]}
-      onClick={(event) => (event.stopPropagation(), onPick())}
     >
       {capture ? <ringGeometry args={[0.36, 0.46, 32]} /> : <circleGeometry args={[0.3, 24]} />}
       <meshBasicMaterial color={capture ? '#ffe14d' : '#ffffff'} transparent opacity={0.8} />
@@ -64,10 +55,13 @@ function Marker({
 export function Board({
   targets,
   selected,
+  actionable,
   onPick,
 }: {
   /** Legal destinations for the toy in hand, and whether each one is a take. */
   targets: Map<Square, boolean>
+  /** Whether clicking a square would do anything — all the cursor needs to know. */
+  actionable: (square: Square) => boolean
   selected: Square | null
   onPick: (square: Square) => void
 }) {
@@ -79,8 +73,42 @@ export function Board({
     []
   )
 
+  // One sheet of glass over the whole board, and the only thing on this page
+  // that answers the pointer. Everything you can point at is a square — which is
+  // what "click a piece" means at a chessboard anyway — so the square comes out
+  // of where the ray meets the board rather than out of hit-testing thirty-two
+  // toys. Nothing can occlude it: it *is* the board, so a piece standing in
+  // front of a square no longer takes the click meant for that square, and the
+  // pointer costs one ray/plane test however full the board is.
+  const last = useRef<Square | null>(null)
+  const point = (event: ThreeEvent<PointerEvent>) => {
+    const square = squareAt(event.point.x, event.point.z)
+    if (square === last.current) return
+    last.current = square
+    pointer.square = square
+    document.body.style.cursor = square && actionable(square) ? 'pointer' : 'auto'
+  }
+  const away = () => {
+    last.current = pointer.square = null
+    document.body.style.cursor = 'auto'
+  }
+
   return (
     <group>
+      <mesh
+        position={[0, 0.31, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onPointerMove={point}
+        onPointerOut={away}
+        onClick={(event) => {
+          const square = squareAt(event.point.x, event.point.z)
+          if (square) onPick(square)
+        }}
+      >
+        <planeGeometry args={[8, 8]} />
+        <meshBasicMaterial visible={false} />
+      </mesh>
+
       {/* The tray, and the lip moulded around it. Bevelled corners because
           nothing that came out of a mould has a sharp one. */}
       <RoundedBox
@@ -102,7 +130,6 @@ export function Board({
           rotation={[-Math.PI / 2, 0, 0]}
           material={tile.light ? light : dark}
           receiveShadow
-          onClick={(event) => (event.stopPropagation(), onPick(tile.square))}
         >
           <planeGeometry args={[1, 1]} />
         </mesh>
@@ -117,12 +144,7 @@ export function Board({
         </mesh>
       )}
       {[...targets].map(([square, capture]) => (
-        <Marker
-          key={square}
-          position={squarePosition(square)}
-          capture={capture}
-          onPick={() => onPick(square)}
-        />
+        <Marker key={square} position={squarePosition(square)} capture={capture} />
       ))}
     </group>
   )
