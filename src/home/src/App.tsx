@@ -95,17 +95,14 @@ function Prompt({ manifest, open, onOpenChange }: {
   }
 
   return (
-    // The whole message rides on one translucent panel: the header and footer
-    // are muted text, and the page underneath is any colour at all.
-    <Message
-      align="end"
-      className="bg-background/85 pointer-events-auto rounded-xl p-3 shadow-lg ring-1 ring-border backdrop-blur-md"
-    >
-      <MessageAvatar className="size-8">
+    // Only the bubble carries a surface — the header and footer sit straight on
+    // the page, the way a message does anywhere else.
+    <Message align="end" className="pointer-events-auto">
+      <MessageAvatar className="bg-background/80 size-8 shadow-lg ring-1 ring-border backdrop-blur-md">
         <Terminal className="size-4" />
       </MessageAvatar>
       <MessageContent>
-        <MessageHeader className="gap-1 px-1">
+        <MessageHeader className="gap-1">
           built from
           <Button
             variant="ghost"
@@ -119,7 +116,7 @@ function Prompt({ manifest, open, onOpenChange }: {
         </MessageHeader>
         <div
           data-slot="message-body"
-          className="bg-muted max-h-[40vh] overflow-y-auto rounded-lg p-3"
+          className="bg-background/85 max-h-[40vh] overflow-y-auto rounded-lg p-3 shadow-lg ring-1 ring-border backdrop-blur-md"
         >
           <pre className="font-mono text-xs leading-5 whitespace-pre-wrap">{manifest.prompt}</pre>
           {manifest.brief && (
@@ -128,7 +125,7 @@ function Prompt({ manifest, open, onOpenChange }: {
             </p>
           )}
         </div>
-        {meta && <MessageFooter className="px-1">{meta}</MessageFooter>}
+        {meta && <MessageFooter>{meta}</MessageFooter>}
       </MessageContent>
     </Message>
   )
