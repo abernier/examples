@@ -70,7 +70,11 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
      screen (`water`, `caustics`, `physics`, …) and picking them narrows the
      list, while anything typed but not picked searches the slug, the title and
      the prompt and brief. No tag list is hardcoded — the vocabulary is whatever
-     the manifests use.
+     the manifests use. The filter itself lives in the query string (nuqs), next
+     to the hash the selection is in, so
+     https://abernier.github.io/examples/?tags=water,caustics&q=surf#lp-surf is a
+     link to a shortlist as much as to a page. It's written with `replaceState`,
+     so the back button stays about the examples.
   3. `.github/og.mjs` writes the social card tags into every `index.html` in
      `dist/` — `og:image` is that project's thumbnail, `og:title`/`og:description`
      are read from the page's own `<title>`/`<meta name=description>`. The gallery
