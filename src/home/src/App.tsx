@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { ExternalLink } from 'lucide-react'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import examples from 'virtual:examples'
 
 import { Button } from '@/components/ui/button'
@@ -131,9 +132,11 @@ function Filter({
       multiple
       items={TAGS}
       value={tags}
-      onValueChange={onTagsChange}
+      // Both handlers get a second `eventDetails` argument from Base UI. Drop it
+      // here: it would land on the state setters as their options bag.
+      onValueChange={(next: string[]) => onTagsChange(next)}
       inputValue={query}
-      onInputValueChange={onQueryChange}
+      onInputValueChange={(next: string) => onQueryChange(next)}
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
@@ -305,8 +308,14 @@ export default function App() {
 
   // The filter only ever touches the sidebar. What's on screen stays on screen —
   // it's in the hash, and filtering it away would be a surprise.
-  const [tags, setTags] = useState<string[]>([])
-  const [query, setQuery] = useState('')
+  //
+  // It lives in the query string next to that hash — /examples/?tags=water,caustics&q=surf#lp-surf
+  // is a link to a shortlist, not just to a page. nuqs handles the round trip:
+  // replaceState so typing doesn't fill the back button (which is for walking
+  // the examples), and the empty value drops the key rather than leaving
+  // `?q=` behind. Both are its defaults.
+  const [tags, setTags] = useQueryState('tags', parseAsArrayOf(parseAsString).withDefault([]))
+  const [query, setQuery] = useQueryState('q', parseAsString.withDefault(''))
   const shown = useMemo(
     () => examples.filter((example) => matches(example, tags, query)),
     [tags, query]
