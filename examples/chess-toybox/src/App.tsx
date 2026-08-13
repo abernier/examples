@@ -260,7 +260,12 @@ export default function App() {
       <Canvas
         shadows="soft"
         dpr={[1, 2]}
-        camera={{ position: [0, 7.6, 12.5], fov: 34 }}
+        // `near` at the default 0.1 spends most of the depth buffer on the
+        // metre in front of the lens that nothing is ever in — the controls
+        // below hold the camera 9 units out at the closest. Pulling it to 1
+        // buys back the precision the printed checks need to stay off the tray
+        // floor at a grazing angle.
+        camera={{ position: [0, 7.6, 12.5], fov: 34, near: 1, far: 100 }}
       >
         <Framing controls={controls} side={mine === "w" ? 1 : -1} />
         <Room />
