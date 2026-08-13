@@ -21,8 +21,20 @@ const TILES = RANKS.split('').flatMap((rank) =>
   })
 )
 
-/** A disc on an empty square, a ring around an occupied one: where you can go. */
-function Marker({ position, capture }: { position: [number, number]; capture: boolean }) {
+/**
+ * A disc on an empty square, a ring around an occupied one: where you can go.
+ * Clickable in its own right — it floats above the board, so it is reachable
+ * from angles where the square underneath it is hidden behind a toy.
+ */
+function Marker({
+  position,
+  capture,
+  onPick,
+}: {
+  position: [number, number]
+  capture: boolean
+  onPick: () => void
+}) {
   const ref = useRef<THREE.Mesh>(null!)
   useFrame((state) => {
     const t = state.clock.elapsedTime * 3 + position[0]
@@ -30,8 +42,13 @@ function Marker({ position, capture }: { position: [number, number]; capture: bo
     ref.current.scale.setScalar(1 + Math.sin(t) * 0.06)
   })
   return (
-    <mesh ref={ref} position={[position[0], 0.32, position[1]]} rotation={[-Math.PI / 2, 0, 0]}>
-      {capture ? <ringGeometry args={[0.36, 0.46, 32]} /> : <circleGeometry args={[0.17, 24]} />}
+    <mesh
+      ref={ref}
+      position={[position[0], 0.32, position[1]]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      onClick={(event) => (event.stopPropagation(), onPick())}
+    >
+      {capture ? <ringGeometry args={[0.36, 0.46, 32]} /> : <circleGeometry args={[0.3, 24]} />}
       <meshBasicMaterial color={capture ? '#ffe14d' : '#ffffff'} transparent opacity={0.8} />
     </mesh>
   )
@@ -100,7 +117,12 @@ export function Board({
         </mesh>
       )}
       {[...targets].map(([square, capture]) => (
-        <Marker key={square} position={squarePosition(square)} capture={capture} />
+        <Marker
+          key={square}
+          position={squarePosition(square)}
+          capture={capture}
+          onPick={() => onPick(square)}
+        />
       ))}
     </group>
   )

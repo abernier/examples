@@ -7,8 +7,8 @@ import {
   useState,
 } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { CameraControls, useCursor } from "@react-three/drei";
-import type { PieceSymbol, Square } from "chess.js";
+import { CameraControls } from "@react-three/drei";
+import type { Color, PieceSymbol, Square } from "chess.js";
 
 import { applyMove, newGame, reply, verdict, type Toy } from "./game";
 import { Board } from "./three/Board";
@@ -22,19 +22,29 @@ const SAYS: Record<string, string> = {
   check: "Échec !",
   thinking: "En face, on réfléchit…",
   won: "Échec et mat — vous gagnez",
-  lost: "Échec et mat — les verts ont gagné",
+  lost: "Échec et mat — la cuisine a gagné",
   stalemate: "Pat",
   draw: "Partie nulle",
 };
 
-// Who each piece is, for the tally beside the board.
-const NAMES: Record<PieceSymbol, string> = {
-  p: "un petit soldat",
-  n: "Buttercup",
-  b: "Buzz",
-  r: "Trixie",
-  q: "Jessie",
-  k: "Woody",
+// Who each piece is, for the tally beside the board — two casts, so two lists.
+const NAMES: Record<Color, Record<PieceSymbol, string>> = {
+  w: {
+    p: "un petit soldat",
+    n: "Buttercup",
+    b: "Buzz",
+    r: "Trixie",
+    q: "Bo Peep",
+    k: "Woody",
+  },
+  b: {
+    p: "Rémy",
+    n: "Émile",
+    b: "Anton Ego",
+    r: "Mabel",
+    q: "Colette",
+    k: "Linguini",
+  },
 };
 
 // A perspective camera's fov is vertical, so a portrait window crops the board
@@ -70,9 +80,7 @@ export default function App() {
   const [toys, setToys] = useState(game.toys);
   const [selected, setSelected] = useState<Square | null>(null);
   const [status, setStatus] = useState("playing");
-  const [hovered, setHovered] = useState(false);
   const [controls, setControls] = useState<CameraControls | null>(null);
-  useCursor(hovered);
 
   const over = OVER.includes(status);
   const yours = game.chess.turn() === "w" && !over;
@@ -152,8 +160,16 @@ export default function App() {
               key={toy.id}
               toy={toy}
               selected={toy.square === selected && toy.takenAt === null}
+              // With a toy in hand, everything that isn't the toy or somewhere
+              // it can go stops answering the pointer. A toy stands a square
+              // tall, so from this camera the ones in front of a target sit
+              // between it and the ray, and the click meant for the square
+              // lands on a bystander instead. There is nothing else worth
+              // clicking at that moment anyway.
+              pickable={
+                !selected || toy.square === selected || targets.has(toy.square)
+              }
               onSelect={() => pick(toy.square)}
-              onHover={setHovered}
             />
           ))}
         </Suspense>
@@ -175,7 +191,7 @@ export default function App() {
 
       <div className="hud">
         <h1>Toybox</h1>
-        <p className="cast">un jeu d'échecs sur le tapis de la chambre</p>
+        <p className="cast">le coffre à jouets contre la cuisine</p>
         <p className={status === "check" || over ? "loud" : ""}>
           {SAYS[yours ? status : over ? status : "thinking"]}
         </p>
@@ -186,7 +202,7 @@ export default function App() {
                   key={toy.id}
                   className={toy.color === "w" ? "tan" : "green"}
                 >
-                  {NAMES[toy.type]}
+                  {NAMES[toy.color][toy.type]}
                 </span>
               ))
             : "Personne n’est encore tombé"}
