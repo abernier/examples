@@ -101,7 +101,10 @@ function Prompt({ manifest, open, onOpenChange }: {
     // Only the bubble carries a surface — the header and footer sit straight on
     // the page, the way a message does anywhere else.
     <Message align="end" className="pointer-events-auto">
-      <MessageAvatar className="bg-background/80 size-8 shadow-lg ring-1 ring-border backdrop-blur-md">
+      {/* The avatar is the toggle, so it must not move when the message opens.
+          Undo the lift the component applies once a footer exists — it would
+          shift the button 2rem up under the cursor mid-click. */}
+      <MessageAvatar className="bg-background/80 size-8 shadow-lg ring-1 ring-border backdrop-blur-md group-has-data-[slot=message-footer]/message:translate-y-0">
         <button
           type="button"
           aria-expanded={open}
