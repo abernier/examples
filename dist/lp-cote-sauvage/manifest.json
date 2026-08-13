@@ -4,6 +4,11 @@
   "brief": "Usecase picked by the agent: surf school.",
   "date": "2026-08-12",
   "model": "haiku",
+  "tags": [
+    "clouds",
+    "sky",
+    "water"
+  ],
   "demos": [
     "water-shader"
   ]

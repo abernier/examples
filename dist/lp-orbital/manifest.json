@@ -2,5 +2,12 @@
   "title": "ORBITAL",
   "prompt": "in 5 separate folders, in parallel (one agent each):\n\n    impress-me with a landing-page mixing 3+ techniques from pmndrs:examples skill\n\nat the end build and open each one in a browser tab",
   "brief": "Fictional brand \"ORBITAL\" — a private smallsat launch & orbital-imaging company. Vacuum black, hairline grid HUD, telemetry numerals, warm ignition orange against cold starlight. Mix 3+ distinct techniques from real pmndrs demos.",
-  "date": "2026-08-12"
+  "date": "2026-08-12",
+  "tags": [
+    "bloom",
+    "instancing",
+    "particles",
+    "postprocessing",
+    "trails"
+  ]
 }

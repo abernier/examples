@@ -4,6 +4,12 @@
   "brief": "Usecase picked by the agent: landscape atelier.",
   "date": "2026-08-12",
   "model": "haiku",
+  "tags": [
+    "clouds",
+    "grass",
+    "shader",
+    "sky"
+  ],
   "demos": [
     "grass-shader"
   ]
