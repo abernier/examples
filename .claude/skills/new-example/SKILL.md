@@ -74,6 +74,7 @@ front of you; reconstructing it later means digging through transcripts.
   "brief": "What that prompt resolved to here.",
   "date": "2026-08-12",
   "model": "opus",
+  "tags": ["bloom", "instancing", "particles", "postprocessing", "transmission"],
   "demos": ["glass-flower", "instanced-particles-effects"]
 }
 ```
@@ -91,6 +92,23 @@ prompt already *is* the instruction and reads that way without you.
 `date` is the day it was built, `model` the family that built it (`opus`,
 `sonnet`, `haiku`), `demos` the pmndrs slugs it borrows — same list as the
 README.
+
+`tags` is required, and it is what the sidebar filter offers: the techniques
+actually on screen, lowercase, sorted, kebab-case. Name what you rendered, not
+what the page is about — `water` because there is water, never `surf-school`.
+Reuse a tag the other manifests already use before minting a new one; the
+vocabulary is the union of every manifest, so a spelling of your own splits the
+filter in two. Current set:
+
+```
+bloom  caustics  clouds  depth-of-field  fire  grass  instancing  particles
+physics  postprocessing  reflections  scroll  shader  shadows  sky  stars
+trails  transmission  volumetric  water
+```
+
+A genuinely new technique earns a new tag — add it and it appears in the filter
+on its own. `postprocessing` and `bloom` are on most of them, so they narrow
+little; the specific ones are what make the filter worth having.
 
 `sync.sh` copies the manifest into `dist/<slug>/`; `src/home/vite.config.ts`
 reads it from there at build time.
