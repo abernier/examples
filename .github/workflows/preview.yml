@@ -1,0 +1,92 @@
+name: Preview on Vercel
+
+# Pages only ever shows main. A PR that changes a landing page — or the gallery
+# around it — is a visual change, and reviewing it from a diff is guesswork, so
+# every PR gets its own deployed copy of dist/.
+#
+# Same pipeline as deploy.yml, same container, different host: Vercel takes the
+# built dist/ as a prebuilt static output (Build Output API v3), so nothing is
+# built on their side. Production on that project is not touched — `vercel
+# deploy` without --prod only ever writes a preview URL.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# One live preview per PR: a new push supersedes the build in flight.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Keep in sync with preview.sh. The image ships the browsers; the npm package
+  # has to match them, hence the pin.
+  PLAYWRIGHT_VERSION: 1.62.1
+  VERCEL_SCOPE: abernier
+  VERCEL_PROJECT: examples
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    # Forks don't get repo secrets, so the deploy step would fail on a
+    # contributor's PR. Skip the whole job there rather than fail it red.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Read-only here: `cache` would write a branch-scoped entry that main can
+      # never see, so restore from whatever the last deploy left and re-shoot
+      # only what this PR changed.
+      - uses: actions/cache/restore@v4
+        with:
+          path: dist/_previews
+          key: previews-${{ hashFiles('dist/**') }}
+          restore-keys: previews-
+
+      - run: |
+          npm install --no-save --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          node .github/preview.mjs
+
+      - run: ./build-home.sh
+
+      - run: node .github/og.mjs
+
+      # dist/ as-is, served from the root of the preview domain — everything in
+      # it resolves relatively, so it doesn't care that Pages serves it from
+      # /examples/ instead.
+      - id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          mkdir -p .vercel/output
+          cp -r dist .vercel/output/static
+          echo '{"version":3}' > .vercel/output/config.json
+          url=$(npx --yes vercel@58 deploy --prebuilt --yes \
+            --token "$VERCEL_TOKEN" \
+            --scope "$VERCEL_SCOPE" \
+            --project "$VERCEL_PROJECT")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      # One comment per PR, rewritten on each push — not a new one every time.
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const url = ${{ toJSON(steps.deploy.outputs.url) }}
+            const marker = '<!-- vercel-preview -->'
+            const body = `${marker}\n🔎 **Preview:** ${url}\n\nThe whole \`dist/\` as it would deploy — screenshots, gallery and social cards included.`
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            })
+            const mine = comments.find((c) => c.body?.startsWith(marker))
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body })
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body })
