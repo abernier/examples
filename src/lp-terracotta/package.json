@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "TERRACOTTA — artisan ceramics house landing page",
   "type": "module",
-  "private": "true",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -20,6 +20,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@examples/dev": "workspace:*",
     "@vitejs/plugin-react": "^6.0.5",
     "vite": "^8.2.1"
   }

@@ -1,13 +1,13 @@
 ---
 name: new-example
-description: Add an entry to this react-three-fiber gallery — scaffold src/<slug>/, build the scene from real pmndrs demos, sync it into dist/ and publish it. Use when asked to create/add an example here, to build something in this repo from a prompt, or a batch of several at once.
+description: Add an entry to this react-three-fiber gallery — scaffold the src/<slug>/ workspace, build the scene from real pmndrs demos, and publish it. Use when asked to create/add an example here, to build something in this repo from a prompt, or a batch of several at once.
 ---
 
 # new-example
 
 A gallery of small react-three-fiber sites, published at
-https://abernier.github.io/examples/ . A contribution is one folder in `src/`
-plus its build copied into `dist/`.
+https://abernier.github.io/examples/ . A contribution is one pnpm workspace in
+`src/` — sources only: `dist/` is built by CI and isn't in the repo.
 
 **The prompt is the brief.** Build what it asks for, in the form it asks for. It
 may name a subject, a technique, a mood, an emoji, or nothing at all — this
@@ -31,24 +31,40 @@ skill is not listed:
 
 ## 1. Scaffold
 
-Slug: kebab-case, unique in `src/` and `dist/`, and it becomes the public URL —
-`/examples/<slug>/`. The existing ones are all `lp-*`; follow that unless the
-prompt makes it absurd.
+Slug: kebab-case, unique in `src/`, and it becomes the public URL —
+`/examples/<slug>/`. It is also the workspace name, so `package.json` carries it
+as `name`. The existing ones are all `lp-*`; follow that unless the prompt makes
+it absurd.
 
 ```sh
 cd src
-npm create vite@latest <slug> -- --template react-ts
-cd <slug>
-npm i three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing maath
-npm i -D @types/three
+pnpm create vite@latest <slug> --template react-ts
+cd ../..
+pnpm --filter <slug> add three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing maath
+pnpm --filter <slug> add -D @types/three @examples/dev
 ```
 
 `postprocessing` is a peer of `@react-three/postprocessing`, not a dependency —
 leave it out and the build dies on `Rolldown failed to resolve import
 "postprocessing"`, with nothing wrong in your own code.
 
-In `vite.config.ts`, `base: './'` — the build has to work both under
-`/examples/<slug>/` and from `file://`.
+`vite.config.ts`, like every other one here — `base: './'` because the build has
+to work both under `/examples/<slug>/` and from `file://`, and the port so the
+gallery can iframe this workspace in dev without being told where it is:
+
+```ts
+import path from 'node:path'
+import { generatePort } from '@examples/dev'
+// …
+const port = generatePort(path.basename(import.meta.dirname))
+
+export default defineConfig({
+  base: './',
+  plugins: [react()],
+  server: { port, strictPort: true },
+  preview: { port, strictPort: true },
+})
+```
 
 Delete the Vite boilerplate (`src/App.css`, `src/assets/`, the counter demo,
 `public/vite.svg`) and replace `README.md` with 3–5 lines: what this is, and
@@ -117,14 +133,15 @@ A genuinely new technique earns a new tag — add it and it appears in the filte
 on its own. `postprocessing` and `bloom` are on most of them, so they narrow
 little; the specific ones are what make the filter worth having.
 
-`sync.sh` copies the manifest into `dist/<slug>/`; `src/home/vite.config.ts`
-reads it from there at build time.
+The manifest is also what makes this folder an example rather than just a
+workspace: it is what turbo builds, what `sync.sh` ships and what the gallery
+lists (`packages/dev/examples.mjs`). No manifest, no entry.
 
 ## 4. Build and look at it
 
 ```sh
-npm run build          # tsc -b && vite build — clean, no TS errors
-npm run preview        # then open the printed URL
+pnpm --filter <slug> build     # tsc -b && vite build — clean, no TS errors
+pnpm --filter <slug> preview   # then open the printed URL
 ```
 
 Look at it before calling it done: first paint, scroll to the bottom, resize
@@ -153,13 +170,13 @@ await page.screenshot({ path: 'hero.jpg' })
 ```sh
 ./sync.sh <slug>       # src/<slug>/dist/ + manifest.json -> dist/<slug>/
 ./preview.sh           # optional, needs Docker: regenerates the gallery locally
-git add src/<slug> dist/<slug>
+git add src/<slug>
 git commit -m "Add <slug>"
 ```
 
-`sync.sh` warns if the manifest is missing — it still deploys, just promptless
-in the gallery. `src/<slug>/dist/` and `node_modules/` are gitignored: commit
-the source and the synced copy only. Pushing to `main` deploys.
+Sources only: `dist/` is gitignored, at the root and in the workspace both — CI
+rebuilds the whole site on every push, so there is nothing built to commit.
+Pushing to `main` deploys.
 
 ## Batch
 

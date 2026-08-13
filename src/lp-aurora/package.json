@@ -1,7 +1,7 @@
 {
   "name": "lp-aurora",
   "version": "0.1.0",
-  "private": "true",
+  "private": true,
   "type": "module",
   "description": "AURORA — circadian light system landing page",
   "scripts": {
@@ -20,6 +20,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@examples/dev": "workspace:*",
     "@vitejs/plugin-react": "^6.0.5",
     "vite": "^8.2.1"
   }

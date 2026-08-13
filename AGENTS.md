@@ -4,6 +4,25 @@ The gallery app is `src/home/`. Everything else under `src/` is an example page 
 see `.claude/skills/new-example/SKILL.md` for how those get built, and `README.md`
 for how the whole thing deploys.
 
+## pnpm workspaces, turbo, and no built output in git
+
+Every folder under `src/` is a workspace (`pnpm-workspace.yaml`), built by turbo
+into its own `dist/`. The deployed `dist/` at the root is assembled from those by
+`./sync.sh` and **is gitignored** — CI rebuilds it on every push, so a PR only
+ever carries sources. Don't commit build output, and don't hand-edit `dist/`.
+
+- `pnpm install` at the root, never `npm install` in a workspace. Adding a
+  dependency: `pnpm --filter <name> add <dep>`.
+- `pnpm --filter <name> dev` runs one example, on a port derived from its slug —
+  `packages/dev/port.mjs`, which its `vite.config` and the gallery both read, so
+  neither has to be told. `pnpm dev` runs the gallery, which in dev iframes those
+  servers and, for one that isn't running, prints that command.
+- A workspace is an *example* when it has a `manifest.json`. That is the rule
+  everywhere: what turbo builds (`node bin/examples.mjs --filter`), what
+  `sync.sh` ships, what the gallery lists. `packages/dev` holds that shared
+  answer; anything that needs to know which examples exist imports it rather
+  than globbing `src/` again.
+
 ## shadcn: as stock as possible
 
 The gallery's UI is shadcn/ui (`base-nova` style, Base UI underneath). Keep it

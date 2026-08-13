@@ -24,6 +24,6 @@ No downloaded assets — the environment, the comb and the honey are all
 procedural, so the page renders offline.
 
 ```sh
-npm i && npm run dev
-npm run build && ../../sync.sh lp-miellerie
+pnpm --filter lp-miellerie dev
+pnpm --filter lp-miellerie build && ../../sync.sh lp-miellerie
 ```

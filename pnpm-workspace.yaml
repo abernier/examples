@@ -1,0 +1,8 @@
+packages:
+  - src/*
+  - packages/*
+
+# esbuild fetches its platform binary from a postinstall script; without this
+# pnpm 10 skips it and vite dies loading its own config.
+onlyBuiltDependencies:
+  - esbuild

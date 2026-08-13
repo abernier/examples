@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { Check, Copy, ExternalLink } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import examples from 'virtual:examples'
 
@@ -20,6 +20,12 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from '@/components/ui/combobox'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group'
 import {
   Message,
   MessageAvatar,
@@ -87,6 +93,80 @@ function Thumb({ name, shot }: { name: string; shot: boolean }) {
 
 type Example = (typeof examples)[number]
 type Manifest = NonNullable<Example['manifest']>
+
+// Where an example is served. Deployed, it's a folder next to this page —
+// dist/<name>/, put there by sync.sh. In dev there is no such folder: each
+// example is its own workspace with its own vite server, on a port derived from
+// its slug (packages/dev/port.mjs), and only the one you're working on is
+// running. Hence `useDevServer` and `<Dev>` below.
+const src = (example: Example) =>
+  import.meta.env.DEV ? `http://localhost:${example.port}/` : `./${example.name}/`
+
+// Is that workspace's dev server up? The page can't tell — a cross-origin fetch
+// to a closed port fails the same way a successful opaque one does — so the
+// gallery's own dev server answers it: /@up/<port>, one TCP connect (see
+// vite.config.ts). Deployed, the question doesn't arise.
+function useDevServer(port: number) {
+  const [up, setUp] = useState<boolean | undefined>(!import.meta.env.DEV)
+
+  const check = useCallback(() => {
+    if (!import.meta.env.DEV) return
+    setUp(undefined)
+    fetch(`/@up/${port}`)
+      .then((response) => response.json())
+      .then((body) => setUp(Boolean(body.up)))
+      .catch(() => setUp(false))
+  }, [port])
+
+  useEffect(check, [check])
+
+  return { up, check }
+}
+
+// Dev only, and in place of the iframe: the example isn't running, and the
+// gallery is not the one that starts it — turbo would give you nineteen vite
+// servers. So it hands over the one command that starts this one.
+function Dev({ name, onRetry }: { name: string; onRetry: () => void }) {
+  const command = `pnpm --filter ${name} dev`
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) return
+    const timer = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(timer)
+  }, [copied])
+
+  return (
+    <div className="absolute inset-0 grid place-items-center p-6">
+      <div className="grid w-full max-w-md gap-3">
+        <p className="text-muted-foreground text-sm">
+          <span className="text-foreground font-medium">{name}</span> isn't running. Start its
+          workspace:
+        </p>
+        <InputGroup>
+          <InputGroupInput readOnly value={command} onFocus={(e) => e.currentTarget.select()} />
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              aria-label="Copy the command"
+              onClick={() => {
+                navigator.clipboard.writeText(command)
+                setCopied(true)
+              }}
+            >
+              {copied ? <Check /> : <Copy />}
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+        <div className="text-muted-foreground text-sm">
+          then{' '}
+          <Button variant="link" size="sm" className="h-auto p-0" onClick={onRetry}>
+            check again
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Two vocabularies in the one filter, and neither list is hardcoded — both are
 // read off the manifests, so a new example brings its own words with it.
@@ -391,6 +471,9 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   useEffect(() => setLoading(true), [current?.name])
 
+  // Always true once deployed — every example is a folder in dist/ there.
+  const { up, check } = useDevServer(current?.port ?? 0)
+
   // Closed until asked for, and sticky across examples either way.
   const [promptOpen, setPromptOpen] = useState(false)
 
@@ -496,7 +579,7 @@ export default function App() {
               className="ml-auto"
               nativeButton={false}
               render={
-                <a href={`./${current.name}/`} target="_blank" rel="noreferrer">
+                <a href={src(current)} target="_blank" rel="noreferrer">
                   Open
                   <ExternalLink />
                 </a>
@@ -506,16 +589,26 @@ export default function App() {
         </header>
 
         <div className="relative flex-1">
-          {current ? (
+          {!current ? (
+            <div className="text-muted-foreground absolute inset-0 grid place-items-center text-sm">
+              no examples yet
+            </div>
+          ) : up === false ? (
+            <Dev name={current.name} onRetry={check} />
+          ) : (
             <>
-              <iframe
-                key={current.name}
-                src={`./${current.name}/`}
-                title={current.name}
-                onLoad={() => setLoading(false)}
-                className="absolute inset-0 h-full w-full border-0"
-              />
-              {loading && (
+              {/* Only once the server behind it answers — in dev, pointing an
+                  iframe at a closed port renders the browser's error page. */}
+              {up && (
+                <iframe
+                  key={current.name}
+                  src={src(current)}
+                  title={current.name}
+                  onLoad={() => setLoading(false)}
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              )}
+              {(loading || !up) && (
                 <div className="bg-background absolute inset-0 grid place-items-center">
                   <span className="text-muted-foreground animate-pulse text-sm">
                     loading {current.name}…
@@ -532,10 +625,6 @@ export default function App() {
                 </div>
               )}
             </>
-          ) : (
-            <div className="text-muted-foreground absolute inset-0 grid place-items-center text-sm">
-              no examples yet
-            </div>
           )}
         </div>
       </SidebarInset>

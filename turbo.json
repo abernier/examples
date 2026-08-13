@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    // One vite build per example, into its own src/<name>/dist/. ./sync.sh
+    // collects those into the dist/ that ships — that part is orchestration,
+    // not a task: it reads every example at once.
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    // The gallery is built last and from the *assembled* dist/ — the previews
+    // (.github/preview.mjs) and the examples it lists both live there, outside
+    // its own package. Nothing turbo can hash, so nothing it should cache.
+    "home#build": {
+      "cache": false
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {}
+  }
+}

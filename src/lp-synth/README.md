@@ -24,6 +24,6 @@ Everything on screen is procedural: no model, no texture file, nothing fetched.
 - `scene/Rig.jsx` — one camera stop per section, picked by scroll and damped.
 
 ```sh
-npm i && npm run dev
-npm run build && ../../sync.sh lp-synth
+pnpm --filter lp-synth dev
+pnpm --filter lp-synth build && ../../sync.sh lp-synth
 ```

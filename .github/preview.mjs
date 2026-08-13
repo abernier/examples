@@ -57,7 +57,7 @@ function loadPlaywright() {
   }
   throw new Error(
     `playwright not found (tried ${candidates.join(", ")}) — run inside the ` +
-      `mcr.microsoft.com/playwright image, or 'npm i --no-save playwright' locally`
+      `mcr.microsoft.com/playwright image, or 'npm i -g playwright' locally`
   );
 }
 

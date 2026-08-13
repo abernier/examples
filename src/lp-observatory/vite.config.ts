@@ -1,3 +1,5 @@
+import path from 'node:path'
+import { generatePort } from '@examples/dev'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -25,6 +27,10 @@ function fileProtocolFriendly(): Plugin {
   }
 }
 
+// Fixed, and derived from the folder name: the gallery points its dev iframe
+// here without this file having to tell it. See packages/dev/port.mjs.
+const port = generatePort(path.basename(import.meta.dirname))
+
 // https://vite.dev/config/
 export default defineConfig({
   // Relative base so the built dist/index.html also works from file://
@@ -42,4 +48,6 @@ export default defineConfig({
       },
     },
   },
+  server: { port, strictPort: true },
+  preview: { port, strictPort: true },
 })
