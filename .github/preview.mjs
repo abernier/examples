@@ -61,6 +61,10 @@ function loadPlaywright() {
   );
 }
 
+// Files that sit in dist/<name>/ but never reach a pixel — changing one must not
+// cost 18 screenshots.
+const NOT_RENDERED = new Set(["manifest.json"]);
+
 // Content hash of a project folder: file paths + bytes, so any change busts it.
 async function hashProject(dir) {
   const hash = createHash("sha1");
@@ -71,7 +75,8 @@ async function hashProject(dir) {
     for (const entry of entries) {
       const file = path.join(current, entry.name);
       if (entry.isDirectory()) await walk(file);
-      else hash.update(file).update(await readFile(file));
+      else if (!(current === dir && NOT_RENDERED.has(entry.name)))
+        hash.update(file).update(await readFile(file));
     }
   };
   await walk(dir);
