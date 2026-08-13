@@ -6,6 +6,9 @@
 #
 # src/<name>/dist/  ->  dist/<name>/  ->  https://abernier.github.io/examples/<name>/
 #
+# src/<name>/manifest.json rides along, so a deployed page carries the prompt it
+# was built from. The gallery reads it from there.
+#
 # src/home/ is the gallery itself, not an example — it lands at the root of
 # dist/ and is built by ./build-home.sh, so it's skipped here.
 
@@ -35,6 +38,12 @@ for name in "${names[@]}"; do
   fi
   mkdir -p "dist/$name"
   rsync -a --delete "$src/" "dist/$name/"
+  # After the rsync, not before: --delete would wipe it.
+  if [ -f "src/$name/manifest.json" ]; then
+    cp "src/$name/manifest.json" "dist/$name/manifest.json"
+  else
+    echo "~ $name has no src/$name/manifest.json — it'll show up promptless in the gallery"
+  fi
   echo "✓ $name"
 done
 

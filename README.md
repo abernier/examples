@@ -59,7 +59,10 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
      `dist/index.html` + `dist/_home/` — a sidebar listing every `dist/<name>/`
      (the list is read from disk at build time) and a full-viewport iframe of the
      selected one. The selection lives in the hash, so
-     https://abernier.github.io/examples/#lp-surf is a link.
+     https://abernier.github.io/examples/#lp-surf is a link. Over the bottom-right
+     corner of the iframe it shows the prompt the page was built from, read from
+     `dist/<name>/manifest.json` (written in `src/<name>/`, carried over by
+     `sync.sh` — see `.claude/skills/new-example/SKILL.md`).
   3. `.github/og.mjs` writes the social card tags into every `index.html` in
      `dist/` — `og:image` is that project's thumbnail, `og:title`/`og:description`
      are read from the page's own `<title>`/`<meta name=description>`. The gallery

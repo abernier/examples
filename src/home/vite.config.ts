@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -18,13 +18,30 @@ const PREVIEWS = path.join(DIST, '_previews')
 
 const VIRTUAL_ID = 'virtual:examples'
 
+// dist/<name>/manifest.json — written by the /new-example skill in src/<name>/
+// and carried over by sync.sh. Missing or malformed is fine: the page then just
+// has no prompt to show.
+function readManifest(name: string) {
+  const file = path.join(DIST, name, 'manifest.json')
+  if (!existsSync(file)) return undefined
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'))
+  } catch {
+    return undefined
+  }
+}
+
 function listExamples() {
   if (!existsSync(DIST)) return []
   return readdirSync(DIST, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'))
     .map((entry) => entry.name)
     .sort()
-    .map((name) => ({ name, shot: existsSync(path.join(PREVIEWS, `${name}.jpg`)) }))
+    .map((name) => ({
+      name,
+      shot: existsSync(path.join(PREVIEWS, `${name}.jpg`)),
+      manifest: readManifest(name),
+    }))
 }
 
 function gallery(): Plugin {

@@ -1,0 +1,10 @@
+{
+  "title": "Jardin Noir",
+  "prompt": "dans 5 dossiers:\n  impress-me with a landing-page for a %usecase% using pmndrs:examples skill\n\nremplace `%usecase%` par n'importe quoi comme, eg: \"jewelry-boutique\" | \"arcade-game shop\" | anything you find relevant\n\na la fin, ouvre chacun ds un onglet\n\n/model haiku",
+  "brief": "Usecase picked by the agent: landscape atelier.",
+  "date": "2026-08-12",
+  "model": "haiku",
+  "demos": [
+    "grass-shader"
+  ]
+}

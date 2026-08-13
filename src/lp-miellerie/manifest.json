@@ -1,0 +1,12 @@
+{
+  "title": "Miellerie du Val Perdu",
+  "prompt": "/new-example",
+  "brief": "No argument — the skill picks a usecase nobody has done yet. It went for an artisanal honey house.",
+  "date": "2026-08-12",
+  "demos": [
+    "inter-epoxy-resin",
+    "volumetric-spotlight",
+    "instances",
+    "tying-canvas-to-scroll-offset"
+  ]
+}
