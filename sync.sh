@@ -37,9 +37,13 @@ for name in "${names[@]}"; do
     echo "✗ $name — no $src (build it: pnpm --filter $name build)" >&2
     exit 1
   fi
+  # Replace rather than merge, so a file the build stopped emitting doesn't
+  # survive in dist/. `cp -R`, not rsync: this runs in CI too, inside the
+  # Playwright image, which doesn't carry rsync.
+  rm -rf "dist/$name"
   mkdir -p "dist/$name"
-  rsync -a --delete "$src/" "dist/$name/"
-  # After the rsync, not before: --delete would wipe it.
+  cp -R "$src/." "dist/$name/"
+  # After the copy, not before: it starts by wiping the folder.
   if [ -f "src/$name/manifest.json" ]; then
     cp "src/$name/manifest.json" "dist/$name/manifest.json"
   else
