@@ -74,6 +74,12 @@ Then open a PR — `src/<slug>/` + `dist/<slug>/`.
   `dist/index.html`, `dist/_home/` and `dist/_previews/` are gitignored: they're
   rebuilt on every deploy. `git add -f dist/index.html` to hand-write the page
   instead — `build-home.sh` then leaves it alone.
+- Every PR gets a deployed copy of the same `dist/` on Vercel
+  (`.github/workflows/preview.yml`, project `abernier/examples`, repo secret
+  `VERCEL_TOKEN`), commented on the PR. These pages are visual — a diff doesn't
+  review them. Pages still only ever serves `main`, and the preview never
+  touches the Vercel project's production URL. PRs from forks skip the job: no
+  secrets there.
 - To work on the landing page, from the repo root:
   ```sh
   npm run dev       # src/home/ in dev — it serves the real dist/, so the

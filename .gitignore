@@ -12,3 +12,6 @@ dist/_previews/
 dist/index.html
 dist/_home/
 .env*
+
+# Scratch dir the Vercel CLI builds to stage dist/ as a prebuilt output
+.vercel/
