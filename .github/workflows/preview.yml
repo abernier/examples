@@ -25,6 +25,7 @@ env:
   # Keep in sync with preview.sh. The image ships the browsers; the npm package
   # has to match them, hence the pin.
   PLAYWRIGHT_VERSION: 1.62.1
+  TURBO_TELEMETRY_DISABLED: 1
   VERCEL_SCOPE: abernier
   VERCEL_PROJECT: examples
 
@@ -41,22 +42,21 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
-
-      - id: store
-        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      # Read-only, like the previews below: a PR's cache entry is branch-scoped
-      # and main would never see it.
-      - uses: actions/cache/restore@v4
+      # pnpm before node: `cache: pnpm` shells out to it for the store path.
+      # This one writes its cache — the store is keyed on the lockfile, so a PR
+      # entry is worth having even scoped to the branch, and unlike the two
+      # below it can't hand main a stale artifact.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          path: ${{ steps.store.outputs.dir }}
-          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-
+          node-version-file: .nvmrc
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      - uses: actions/cache/restore@v4
+      # Read-only from here on: a PR's cache entry is branch-scoped and main
+      # would never see it.
+      - uses: actions/cache/restore@v6
         with:
           path: .turbo
           key: turbo-${{ github.sha }}
@@ -67,7 +67,7 @@ jobs:
 
       # Restore from whatever the last deploy left and re-shoot only what this
       # PR changed.
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         with:
           path: dist/_previews
           key: previews-${{ hashFiles('dist/**') }}

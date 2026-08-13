@@ -3,9 +3,10 @@
 A gallery of small static sites, published under https://abernier.github.io/examples/
 
 A turborepo of pnpm workspaces — one per project, in `examples/<name>/`, each
-building itself into its own `dist/`; the gallery around them is `apps/website/`. The site is `dist/` at the root — assembled from
-those builds by `./sync.sh` and **not versioned**. CI rebuilds all of it on every
-push to `main`.
+building itself into its own `dist/`; the gallery around them is
+`apps/website/`. The site is `dist/` at the root — assembled from those builds
+by `./sync.sh` and **not versioned**. CI rebuilds all of it on every push to
+`main`.
 
 ```
 examples/foo/  ->  dist/foo/  ->  https://abernier.github.io/examples/foo/
@@ -20,10 +21,11 @@ pnpm build                  # every example -> dist/
 ```
 
 An `examples/<name>/manifest.json` is what makes a workspace an *example*: the
-prompt it was built from, and the vocabulary the gallery filters on. It's what gets built,
-synced, screenshot and listed — a workspace without one (`apps/website/`, an
-unfinished sketch) is still a workspace you can `pnpm --filter <name> dev`, it
-simply isn't part of the site. `node bin/examples.mjs` prints the list.
+prompt it was built from, and the vocabulary the gallery filters on. It's what
+gets built, synced, screenshot and listed — a workspace without one
+(`apps/website/`, an unfinished sketch) is still a workspace you can
+`pnpm --filter <name> dev`, it simply isn't part of the site.
+`node bin/examples.mjs` prints the list.
 
 ## Contributing (with Claude Code)
 
@@ -51,7 +53,13 @@ Then open a PR — `examples/<slug>/`, sources only.
 
 1. Add the workspace: `examples/<name>/`, a Vite app with `base: './'` (or
    `--base=/examples/<name>/`) so its assets resolve under the deploy path, and
-   a `manifest.json` next to its `package.json`.
+   a `manifest.json` next to its `package.json`. Its `vite.config` takes the
+   port the gallery expects to find it on in dev — every other one here does:
+   ```ts
+   import { generatePort } from '@examples/dev' // pnpm --filter <name> add -D @examples/dev
+   const port = generatePort(path.basename(import.meta.dirname))
+   // server: { port, strictPort: true }, preview: { port, strictPort: true }
+   ```
 2. `pnpm install`, then build it:
    ```sh
    pnpm build                     # every example, then ./sync.sh into dist/

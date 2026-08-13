@@ -18,6 +18,7 @@ env:
   # Keep in sync with preview.sh. The image ships the browsers; the npm package
   # has to match them, hence the pin.
   PLAYWRIGHT_VERSION: 1.62.1
+  TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
   deploy:
@@ -30,23 +31,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
-
-      - id: store
-        run: echo "dir=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v4
+      # pnpm before node: `cache: pnpm` shells out to it for the store path.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          path: ${{ steps.store.outputs.dir }}
-          key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-
+          node-version-file: .nvmrc
+          cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
       # Every example that turbo can prove nothing changed in comes straight
       # out of here instead of being rebuilt — which also keeps its bytes
       # identical, so the preview cache below still hits.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-${{ github.sha }}
@@ -61,7 +58,7 @@ jobs:
       # Keyed after the build, on the dist/ that just came out of it — a run
       # that rebuilt nothing byte-for-byte hits exactly; restore-keys gets us
       # the latest one otherwise, which is the point.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: dist/_previews
           key: previews-${{ hashFiles('dist/**') }}
