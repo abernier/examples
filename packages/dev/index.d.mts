@@ -1,4 +1,4 @@
-/** `src/<slug>/manifest.json` — how the page came to exist. */
+/** `examples/<slug>/manifest.json` — how the page came to exist. */
 export type Manifest = {
   title?: string
   /** The prompt it was built from, verbatim. */
@@ -16,7 +16,7 @@ export type Manifest = {
 }
 
 export type Example = {
-  /** Slug: the folder under `src/`, and the URL it ships at. */
+  /** Slug: the folder under `examples/`, and the URL it ships at. */
   name: string
   manifest?: Manifest
   /** Where `pnpm --filter <name> dev` serves it. */
@@ -24,7 +24,7 @@ export type Example = {
 }
 
 export declare const ROOT: string
-export declare const SRC: string
+export declare const EXAMPLES: string
 export declare const DIST: string
 
 export declare function generatePort(name: string, minPort?: number, maxPort?: number): number

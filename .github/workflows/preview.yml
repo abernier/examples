@@ -77,7 +77,7 @@ jobs:
           npm install -g --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
           node .github/preview.mjs
 
-      - run: ./build-home.sh
+      - run: ./build-website.sh
 
       - run: node .github/og.mjs
 

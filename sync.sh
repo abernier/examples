@@ -4,17 +4,17 @@
 #   ./sync.sh              # every example (see bin/examples.mjs)
 #   ./sync.sh foo bar      # just those
 #
-# src/<name>/dist/  ->  dist/<name>/  ->  https://abernier.github.io/examples/<name>/
+# examples/<name>/dist/  ->  dist/<name>/  ->  https://abernier.github.io/examples/<name>/
 #
 # Build first — `pnpm build` does both, turbo then this. Nothing here is
 # versioned: dist/ is rebuilt on every deploy.
 #
-# src/<name>/manifest.json rides along, so a deployed page carries the prompt it
-# was built from. The gallery reads its own copy from src/, but a page opened on
-# its own still has it.
+# examples/<name>/manifest.json rides along, so a deployed page carries the
+# prompt it was built from. The gallery reads its own copy from examples/, but a
+# page opened on its own still has it.
 #
-# src/home/ is the gallery itself, not an example — it lands at the root of
-# dist/ and is built by ./build-home.sh, so it's not in the list.
+# apps/website/ is the gallery itself, not an example — it lands at the root of
+# dist/ and is built by ./build-website.sh, so it's not in the list.
 
 set -euo pipefail
 shopt -s nullglob
@@ -27,12 +27,12 @@ if [ ${#names[@]} -eq 0 ]; then
 fi
 
 if [ ${#names[@]} -eq 0 ]; then
-  echo "nothing to sync: no src/*/manifest.json found" >&2
+  echo "nothing to sync: no examples/*/manifest.json found" >&2
   exit 1
 fi
 
 for name in "${names[@]}"; do
-  src="src/$name/dist"
+  src="examples/$name/dist"
   if [ ! -d "$src" ]; then
     echo "✗ $name — no $src (build it: pnpm --filter $name build)" >&2
     exit 1
@@ -44,10 +44,10 @@ for name in "${names[@]}"; do
   mkdir -p "dist/$name"
   cp -R "$src/." "dist/$name/"
   # After the copy, not before: it starts by wiping the folder.
-  if [ -f "src/$name/manifest.json" ]; then
-    cp "src/$name/manifest.json" "dist/$name/manifest.json"
+  if [ -f "examples/$name/manifest.json" ]; then
+    cp "examples/$name/manifest.json" "dist/$name/manifest.json"
   else
-    echo "~ $name has no src/$name/manifest.json — it'll show up promptless in the gallery"
+    echo "~ $name has no examples/$name/manifest.json — it'll show up promptless in the gallery"
   fi
   echo "✓ $name"
 done
@@ -58,5 +58,5 @@ done
 for d in dist/*/; do
   name=$(basename "$d")
   case "$name" in _*) continue ;; esac
-  [ -f "src/$name/manifest.json" ] || echo "~ dist/$name is not an example any more (rm -rf dist/$name)"
+  [ -f "examples/$name/manifest.json" ] || echo "~ dist/$name is not an example any more (rm -rf dist/$name)"
 done

@@ -9,12 +9,12 @@ import { defineConfig, type Plugin } from 'vite'
 
 // The landing page of the gallery — https://abernier.github.io/examples/
 //
-// Its content is the workspaces next door: one sidebar entry per src/<name>/
+// Its content is the workspaces next door: one sidebar entry per examples/<name>/
 // carrying a manifest.json (see packages/dev/examples.mjs), thumbnailed by
 // .github/preview.mjs into dist/_previews/<name>.jpg. The list is read from
 // disk at build time and handed to the app as `virtual:examples`.
 //
-// Build it with ../../build-home.sh, which copies the output over dist/.
+// Build it with ../../build-website.sh, which copies the output over dist/.
 
 const PREVIEWS = path.join(DIST, '_previews')
 
@@ -58,7 +58,7 @@ function gallery(): Plugin {
         ...example,
         shot: existsSync(path.join(PREVIEWS, `${example.name}.jpg`)),
       }))
-      if (!examples.length) this.warn('no src/*/manifest.json found')
+      if (!examples.length) this.warn('no examples/*/manifest.json found')
       return `export default ${JSON.stringify(examples)}`
     },
 

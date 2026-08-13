@@ -1,13 +1,13 @@
 ---
 name: new-example
-description: Add an entry to this react-three-fiber gallery — scaffold the src/<slug>/ workspace, build the scene from real pmndrs demos, and publish it. Use when asked to create/add an example here, to build something in this repo from a prompt, or a batch of several at once.
+description: Add an entry to this react-three-fiber gallery — scaffold the examples/<slug>/ workspace, build the scene from real pmndrs demos, and publish it. Use when asked to create/add an example here, to build something in this repo from a prompt, or a batch of several at once.
 ---
 
 # new-example
 
 A gallery of small react-three-fiber sites, published at
 https://abernier.github.io/examples/ . A contribution is one pnpm workspace in
-`src/` — sources only: `dist/` is built by CI and isn't in the repo.
+`examples/` — sources only: `dist/` is built by CI and isn't in the repo.
 
 **The prompt is the brief.** Build what it asks for, in the form it asks for. It
 may name a subject, a technique, a mood, an emoji, or nothing at all — this
@@ -16,7 +16,7 @@ only the mechanics, fixed because the deploy depends on them.
 
 If the prompt reads two ways and the two lead somewhere genuinely different,
 ask. Otherwise decide, and say what you decided. With no prompt at all, build
-something the gallery does not have yet (`ls src/`) and say what you picked.
+something the gallery does not have yet (`ls examples/`) and say what you picked.
 
 ## Prerequisite
 
@@ -31,15 +31,15 @@ skill is not listed:
 
 ## 1. Scaffold
 
-Slug: kebab-case, unique in `src/`, and it becomes the public URL —
+Slug: kebab-case, unique in `examples/`, and it becomes the public URL —
 `/examples/<slug>/`. It is also the workspace name, so `package.json` carries it
 as `name`. The existing ones are all `lp-*`; follow that unless the prompt makes
 it absurd.
 
 ```sh
-cd src
+cd examples
 pnpm create vite@latest <slug> --template react-ts
-cd ../..
+cd ..
 pnpm --filter <slug> add three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing maath
 pnpm --filter <slug> add -D @types/three @examples/dev
 ```
@@ -79,7 +79,7 @@ guess drei props or r3f hooks.
 
 ## 3. Manifest
 
-`src/<slug>/manifest.json` — where this came from. The gallery shows `prompt`
+`examples/<slug>/manifest.json` — where this came from. The gallery shows `prompt`
 over the bottom-right corner of the iframe. Write it while the brief is still in
 front of you; reconstructing it later means digging through transcripts.
 
@@ -168,9 +168,9 @@ await page.screenshot({ path: 'hero.jpg' })
 ## 5. Publish
 
 ```sh
-./sync.sh <slug>       # src/<slug>/dist/ + manifest.json -> dist/<slug>/
+./sync.sh <slug>       # examples/<slug>/dist/ + manifest.json -> dist/<slug>/
 ./preview.sh           # optional, needs Docker: regenerates the gallery locally
-git add src/<slug>
+git add examples/<slug>
 git commit -m "Add <slug>"
 ```
 
@@ -183,7 +183,7 @@ Pushing to `main` deploys.
 For "5 in parallel", spawn one agent per entry, all in a single message, each
 with its own slug and its own direction — distinct enough that five agents don't
 converge on the same blue particle field. Each runs steps 1–4 in its own
-`src/<slug>/`; run step 5 yourself once they report, so the commit stays
+`examples/<slug>/`; run step 5 yourself once they report, so the commit stays
 coherent.
 
 Every manifest in a batch carries the same `prompt` — the one the human typed,

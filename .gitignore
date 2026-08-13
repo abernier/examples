@@ -1,8 +1,9 @@
 # Only the sources are versioned. dist/ is the site, and it is a build output:
-# `pnpm build` (turbo, then ./sync.sh) reassembles it from src/*/dist/, CI does
-# the same on every deploy. Nothing in it is committed.
+# `pnpm build` (turbo, then ./sync.sh) reassembles it from examples/*/dist/, CI
+# does the same on every deploy. Nothing in it is committed.
 /dist/
-/src/*/dist/
+/apps/*/dist/
+/examples/*/dist/
 
 node_modules/
 package-lock.json

@@ -2,26 +2,26 @@
 
 A gallery of small static sites, published under https://abernier.github.io/examples/
 
-A turborepo of pnpm workspaces: one per project, in `src/<name>/`, each building
-itself into its own `dist/`. The site is `dist/` at the root — assembled from
+A turborepo of pnpm workspaces — one per project, in `examples/<name>/`, each
+building itself into its own `dist/`; the gallery around them is `apps/website/`. The site is `dist/` at the root — assembled from
 those builds by `./sync.sh` and **not versioned**. CI rebuilds all of it on every
 push to `main`.
 
 ```
-src/foo/  ->  dist/foo/  ->  https://abernier.github.io/examples/foo/
-src/bar/  ->  dist/bar/  ->  https://abernier.github.io/examples/bar/
+examples/foo/  ->  dist/foo/  ->  https://abernier.github.io/examples/foo/
+examples/bar/  ->  dist/bar/  ->  https://abernier.github.io/examples/bar/
 ```
 
 ```sh
 pnpm install
 pnpm --filter lp-surf dev   # one example, on a port derived from its slug
-pnpm dev                    # the gallery (src/home/) at :5173
+pnpm dev                    # the gallery (apps/website/) at :5173
 pnpm build                  # every example -> dist/
 ```
 
-A `src/<name>/manifest.json` is what makes a workspace an *example*: the prompt it
-was built from, and the vocabulary the gallery filters on. It's what gets built,
-synced, screenshot and listed — a workspace without one (`src/home/`, an
+An `examples/<name>/manifest.json` is what makes a workspace an *example*: the
+prompt it was built from, and the vocabulary the gallery filters on. It's what gets built,
+synced, screenshot and listed — a workspace without one (`apps/website/`, an
 unfinished sketch) is still a workspace you can `pnpm --filter <name> dev`, it
 simply isn't part of the site. `node bin/examples.mjs` prints the list.
 
@@ -39,17 +39,17 @@ brief, the skill doesn't narrow it:
 /new-example 5 of them in parallel
 ```
 
-The skill lives in `.claude/skills/new-example/` — it scaffolds the `src/<slug>/`
+The skill lives in `.claude/skills/new-example/` — it scaffolds the `examples/<slug>/`
 workspace, ports the scene from real demos of the `pmndrs:examples` skill,
 records the prompt in a manifest and tells you what to commit. The pmndrs plugin
 is declared in `.claude/settings.json`, so a fresh clone gets it on first launch
 (accept the prompt); otherwise `/plugin marketplace add pmndrs/claude-code-plugin`.
 
-Then open a PR — `src/<slug>/`, sources only.
+Then open a PR — `examples/<slug>/`, sources only.
 
 ## Adding / updating a project by hand
 
-1. Add the workspace: `src/<name>/`, a Vite app with `base: './'` (or
+1. Add the workspace: `examples/<name>/`, a Vite app with `base: './'` (or
    `--base=/examples/<name>/`) so its assets resolve under the deploy path, and
    a `manifest.json` next to its `package.json`.
 2. `pnpm install`, then build it:
@@ -57,7 +57,7 @@ Then open a PR — `src/<slug>/`, sources only.
    pnpm build                     # every example, then ./sync.sh into dist/
    pnpm --filter <name> build     # just this one (./sync.sh <name> to collect it)
    ```
-3. Commit `src/<name>/` and push → live at
+3. Commit `examples/<name>/` and push → live at
    https://abernier.github.io/examples/<name>/
 
 ## Notes
@@ -66,17 +66,17 @@ Then open a PR — `src/<slug>/`, sources only.
   source), so no `.nojekyll` needed — `_`-prefixed files are served fine.
 - The site is built at deploy time, in four steps:
   1. `pnpm build` — turbo runs each example's own `build`, then `./sync.sh`
-     copies every `src/<name>/dist/` into `dist/<name>/` (its `manifest.json`
+     copies every `examples/<name>/dist/` into `dist/<name>/` (its `manifest.json`
      rides along, so a page opened on its own still carries its prompt). Turbo
      caches per workspace, and CI carries `.turbo` between runs, so a push that
      touches one example rebuilds one example.
   2. `.github/preview.mjs` screenshots every `dist/<name>/` (Playwright, in the
      `mcr.microsoft.com/playwright` container — browsers already baked in) into
      `dist/_previews/`.
-  3. `./build-home.sh` builds `src/home/` (Vite + React + shadcn/ui) into
-     `dist/index.html` + `dist/_home/` — a sidebar listing every example (read
-     off `src/*/manifest.json` at build time) and a full-viewport iframe of the
-     selected one. The selection lives in the hash, so
+  3. `./build-website.sh` builds `apps/website/` (Vite + React + shadcn/ui) into
+     `dist/index.html` + `dist/_home/` — the site's home page, hence that name —
+     a sidebar listing every example (read off `examples/*/manifest.json` at
+     build time) and a full-viewport iframe of the selected one. The selection lives in the hash, so
      https://abernier.github.io/examples/#lp-surf is a link. Over the bottom-right
      corner of the iframe it shows the prompt the page was built from. The same
      manifest feeds the filter in the sidebar header — one combobox, two grouped
@@ -99,7 +99,7 @@ Then open a PR — `src/<slug>/`, sources only.
      is left alone.
 
   `git add -f dist/index.html` to hand-write the gallery page instead —
-  `build-home.sh` then leaves it alone.
+  `build-website.sh` then leaves it alone.
 - In dev the gallery has no `dist/<name>/` to iframe, so it points at each
   example's own vite server instead — port derived from the slug
   (`packages/dev/port.mjs`), the same one `pnpm --filter <name> dev` binds. It
@@ -123,12 +123,12 @@ Then open a PR — `src/<slug>/`, sources only.
   is unaffected by that switch.
 - From the repo root:
   ```sh
-  pnpm dev          # src/home/ in dev — pnpm --filter <name> dev for an example
-  pnpm build        # turbo, then ./sync.sh — every example into dist/
-  pnpm build:home   # ./build-home.sh — the gallery over it
-  pnpm preview      # serve dist/ as deployed
-  pnpm shots        # ./preview.sh — build, re-screenshot, gallery (needs Docker)
-  pnpm og           # inject the social cards — CI does this on every deploy
+  pnpm dev            # apps/website/ in dev — pnpm --filter <name> dev for an example
+  pnpm build          # turbo, then ./sync.sh — every example into dist/
+  pnpm build:website  # ./build-website.sh — the gallery over it
+  pnpm preview        # serve dist/ as deployed
+  pnpm shots          # ./preview.sh — build, re-screenshot, gallery (needs Docker)
+  pnpm og             # inject the social cards — CI does this on every deploy
   ```
 - To regenerate everything locally: `./preview.sh` (the examples with turbo, the
   screenshots in the same container image as CI — needs Docker — then the

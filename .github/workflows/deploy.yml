@@ -75,9 +75,9 @@ jobs:
           npm install -g --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
           node .github/preview.mjs
 
-      # Builds the gallery (src/home/, Vite) from those previews into
+      # Builds the gallery (apps/website/, Vite) from those previews into
       # dist/index.html + dist/_home/. After the screenshots, on purpose.
-      - run: ./build-home.sh
+      - run: ./build-website.sh
 
       # Social cards: og:image per page, pointing at the thumbs above. Last,
       # because it rewrites every index.html in dist/ — the gallery's included.

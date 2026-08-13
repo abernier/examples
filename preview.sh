@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rebuild the whole dist/ locally, exactly like CI does — the examples with
 # turbo, the screenshots in the same Playwright container image, then the
-# landing page with ./build-home.sh (Vite, on the host).
+# landing page with ./build-website.sh (Vite, on the host).
 #
 #   ./preview.sh
 #
@@ -25,7 +25,7 @@ docker run --rm \
   "mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble" \
   bash -c "npm install -g --no-audit --no-fund playwright@${PLAYWRIGHT_VERSION} >/dev/null && node .github/preview.mjs"
 
-./build-home.sh
+./build-website.sh
 
 echo
 echo "dist/ regenerated — examples, previews and gallery"

@@ -1,5 +1,5 @@
 // Screenshots every dist/<name>/ into dist/_previews/ — the thumbnails the
-// landing page is built from (src/home/, see ../build-home.sh).
+// landing page is built from (apps/website/, see ../build-website.sh).
 // Run by .github/workflows/deploy.yml inside the Playwright container image.
 //
 //   node .github/preview.mjs
@@ -26,7 +26,7 @@ import path from "node:path";
 const SHOT_DIR = "dist/_previews";
 const MANIFEST = `${SHOT_DIR}/manifest.json`;
 const MOUNT = "/examples"; // must match the GitHub Pages base path
-// Keep in sync with the card aspect-ratio in src/home/style.css.
+// Keep in sync with the card aspect-ratio in apps/website/src/index.css.
 const VIEWPORT = { width: 1280, height: 800 };
 const SETTLE_MS = 2500; // let fonts, hero animations and 3D scenes land
 // The gallery's own social image: a contact sheet of the thumbs, at the ratio

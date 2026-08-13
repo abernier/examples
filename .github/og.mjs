@@ -3,7 +3,7 @@
 //
 //   node .github/og.mjs
 //
-// Runs *after* preview.mjs (the images must exist) and after ./build-home.sh
+// Runs *after* preview.mjs (the images must exist) and after ./build-website.sh
 // (dist/index.html must exist). Each head gets a marked block:
 //
 //   <!-- og:start --> … <!-- og:end -->
@@ -125,7 +125,7 @@ for (const name of names) {
   }
 }
 
-// The gallery itself, built by ./build-home.sh — its image is the contact sheet.
+// The gallery itself, built by ./build-website.sh — its image is the contact sheet.
 if (await exists("dist/index.html")) {
   const mosaic = "dist/_previews/_home.jpg";
   const done = await inject("dist/index.html", {
@@ -138,7 +138,7 @@ if (await exists("dist/index.html")) {
     console.log("✓ index.html");
   }
 } else {
-  console.log("· index.html missing — run ./build-home.sh first");
+  console.log("· index.html missing — run ./build-website.sh first");
 }
 
 console.log(`${written} page(s) tagged`);

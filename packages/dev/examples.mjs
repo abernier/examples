@@ -5,16 +5,16 @@ import { generatePort } from './port.mjs'
 
 /** The repo root — this package sits at packages/dev/. */
 export const ROOT = path.resolve(import.meta.dirname, '../..')
-export const SRC = path.join(ROOT, 'src')
+export const EXAMPLES = path.join(ROOT, 'examples')
 export const DIST = path.join(ROOT, 'dist')
 
 /**
- * `src/<slug>/manifest.json` — how the page came to exist, written by the
+ * `examples/<slug>/manifest.json` — how the page came to exist, written by the
  * /new-example skill. Missing or malformed is not an error here: the caller
  * decides what a folder without one means.
  */
 function readManifest(dir) {
-  const file = path.join(SRC, dir, 'manifest.json')
+  const file = path.join(EXAMPLES, dir, 'manifest.json')
   if (!existsSync(file)) return undefined
   try {
     return JSON.parse(readFileSync(file, 'utf8'))
@@ -24,12 +24,12 @@ function readManifest(dir) {
 }
 
 /**
- * The examples: every `src/<slug>/` carrying a manifest.json.
+ * The examples: every `examples/<slug>/` carrying a manifest.json.
  *
  * That file is what makes a workspace an example rather than just a folder —
  * it's what gets built, synced into dist/, screenshot and listed in the
- * gallery. A workspace without one (`src/home/`, a sketch you haven't
- * finished) is still a workspace you can `pnpm --filter <slug> dev`; it simply
+ * gallery. A workspace without one (an unfinished sketch, anything under
+ * `apps/`) is still a workspace you can `pnpm --filter <slug> dev`; it simply
  * isn't part of the site.
  *
  * Newest first — the sidebar is a feed, and what was built last is what you
@@ -38,8 +38,8 @@ function readManifest(dir) {
  * the ties inside a day, which is most of them here.
  */
 export function listExamples() {
-  if (!existsSync(SRC)) return []
-  return readdirSync(SRC, { withFileTypes: true })
+  if (!existsSync(EXAMPLES)) return []
+  return readdirSync(EXAMPLES, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => ({
       name: entry.name,

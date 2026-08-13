@@ -1,13 +1,13 @@
 # AGENTS.md
 
-The gallery app is `src/home/`. Everything else under `src/` is an example page —
-see `.claude/skills/new-example/SKILL.md` for how those get built, and `README.md`
-for how the whole thing deploys.
+The gallery app is `apps/website/`. Every folder under `examples/` is a page it
+lists — see `.claude/skills/new-example/SKILL.md` for how those get built, and
+`README.md` for how the whole thing deploys.
 
 ## pnpm workspaces, turbo, and no built output in git
 
-Every folder under `src/` is a workspace (`pnpm-workspace.yaml`), built by turbo
-into its own `dist/`. The deployed `dist/` at the root is assembled from those by
+`apps/*`, `examples/*` and `packages/*` are all workspaces
+(`pnpm-workspace.yaml`), built by turbo into their own `dist/`. The deployed `dist/` at the root is assembled from those by
 `./sync.sh` and **is gitignored** — CI rebuilds it on every push, so a PR only
 ever carries sources. Don't commit build output, and don't hand-edit `dist/`.
 
@@ -21,14 +21,14 @@ ever carries sources. Don't commit build output, and don't hand-edit `dist/`.
   everywhere: what turbo builds (`node bin/examples.mjs --filter`), what
   `sync.sh` ships, what the gallery lists. `packages/dev` holds that shared
   answer; anything that needs to know which examples exist imports it rather
-  than globbing `src/` again.
+  than globbing `examples/` again.
 
 ## shadcn: as stock as possible
 
 The gallery's UI is shadcn/ui (`base-nova` style, Base UI underneath). Keep it
 that way.
 
-- **Install with the CLI.** `npx shadcn@latest add <name>` from `src/home/`.
+- **Install with the CLI.** `npx shadcn@latest add <name>` from `apps/website/`.
   Never hand-write a component into `src/components/ui/`, never paste one from
   the docs, never copy one from another project. The CLI resolves the style, the
   registry dependencies and the import aliases from `components.json`; doing it
