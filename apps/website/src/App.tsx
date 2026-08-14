@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { Check, Copy, ExternalLink } from 'lucide-react'
+import { Check, Copy, ExternalLink, SearchX } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import examples from 'virtual:examples'
 
@@ -26,6 +26,14 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import {
   Message,
   MessageAvatar,
@@ -537,7 +545,29 @@ export default function App() {
           <SidebarGroup>
             <SidebarGroupContent>
               {filtering && shown.length === 0 && (
-                <p className="text-muted-foreground px-2 py-6 text-center text-xs">nothing matches</p>
+                <Empty className="py-8">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <SearchX />
+                    </EmptyMedia>
+                    <EmptyTitle>nothing matches</EmptyTitle>
+                    <EmptyDescription className="text-xs">
+                      no example carries all of that at once.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setOptions([])
+                        setQuery('')
+                      }}
+                    >
+                      clear the filter
+                    </Button>
+                  </EmptyContent>
+                </Empty>
               )}
               <SidebarMenu className="gap-4">
                 {shown.map((example) => (
