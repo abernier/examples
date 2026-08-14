@@ -247,11 +247,17 @@ function Filter({
       // word; it's plumbing, so it stays out of the chips and out of the match.
       itemToStringLabel={label}
       value={options}
-      // Both handlers get a second `eventDetails` argument from Base UI. Drop it
-      // here: it would land on the state setters as their options bag.
+      // Both handlers get a second `eventDetails` argument from Base UI. Keep it
+      // away from the state setters: it would land on them as their options bag.
       onValueChange={(next: string[]) => onOptionsChange(next)}
       inputValue={query}
-      onInputValueChange={(next: string) => onQueryChange(next)}
+      // Base UI treats the text as ephemeral — a filter for picking chips — and
+      // clears it itself once the popup closes. Here the text *is* half the
+      // filter, so veto that one write; `reason` tells it apart from typing.
+      onInputValueChange={(next: string, details) => {
+        if (details.reason === 'input-clear') return details.cancel()
+        onQueryChange(next)
+      }}
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
