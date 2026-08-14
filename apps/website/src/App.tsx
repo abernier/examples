@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { Check, Copy, ExternalLink } from 'lucide-react'
+import { Check, Copy, ExternalLink, SearchX } from 'lucide-react'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import examples from 'virtual:examples'
 
@@ -26,6 +26,14 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty'
 import {
   Message,
   MessageAvatar,
@@ -247,11 +255,17 @@ function Filter({
       // word; it's plumbing, so it stays out of the chips and out of the match.
       itemToStringLabel={label}
       value={options}
-      // Both handlers get a second `eventDetails` argument from Base UI. Drop it
-      // here: it would land on the state setters as their options bag.
+      // Both handlers get a second `eventDetails` argument from Base UI. Keep it
+      // away from the state setters: it would land on them as their options bag.
       onValueChange={(next: string[]) => onOptionsChange(next)}
       inputValue={query}
-      onInputValueChange={(next: string) => onQueryChange(next)}
+      // Base UI treats the text as ephemeral — a filter for picking chips — and
+      // clears it itself once the popup closes. Here the text *is* half the
+      // filter, so veto that one write; `reason` tells it apart from typing.
+      onInputValueChange={(next: string, details) => {
+        if (details.reason === 'input-clear') return details.cancel()
+        onQueryChange(next)
+      }}
     >
       <ComboboxChips ref={anchor}>
         <ComboboxValue>
@@ -531,7 +545,29 @@ export default function App() {
           <SidebarGroup>
             <SidebarGroupContent>
               {filtering && shown.length === 0 && (
-                <p className="text-muted-foreground px-2 py-6 text-center text-xs">nothing matches</p>
+                <Empty className="py-8">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <SearchX />
+                    </EmptyMedia>
+                    <EmptyTitle>nothing matches</EmptyTitle>
+                    <EmptyDescription className="text-xs">
+                      no example carries all of that at once.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setOptions([])
+                        setQuery('')
+                      }}
+                    >
+                      clear the filter
+                    </Button>
+                  </EmptyContent>
+                </Empty>
               )}
               <SidebarMenu className="gap-4">
                 {shown.map((example) => (
